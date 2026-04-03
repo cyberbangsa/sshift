@@ -13,6 +13,7 @@ use tauri::{AppHandle, Emitter};
 
 use crate::domain::entities::{AuthMethod, Host, Session, SessionStatus};
 use crate::domain::repositories::RepositoryError;
+use crate::infrastructure::ssh::sftp_worker::{start_sftp_worker, SftpCommand};
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -24,6 +25,11 @@ pub enum PtyInput {
 
 struct SessionEntry {
     tx: SyncSender<PtyInput>,
+    /// Stored so we can lazily spin up a SFTP worker on demand.
+    host: Host,
+    password: Option<String>,
+    /// Populated on first SFTP request.
+    sftp_tx: Option<SyncSender<SftpCommand>>,
 }
 
 // ── SshManager ───────────────────────────────────────────────────────────────
@@ -47,6 +53,10 @@ impl SshManager {
         password: Option<String>,
         app: AppHandle,
     ) -> Result<Session, RepositoryError> {
+        // Clone credentials so we can store them in SessionEntry for lazy SFTP reconnect.
+        let host_for_entry = host.clone();
+        let password_for_entry = password.clone();
+
         // One-shot result channel (connect thread → this async fn)
         let (result_tx, result_rx) = sync_channel::<Result<Session, RepositoryError>>(1);
         // Bounded command channel (Tauri commands → session thread)
@@ -71,7 +81,15 @@ impl SshManager {
         self.sessions
             .lock()
             .map_err(|e| RepositoryError::Internal(e.to_string()))?
-            .insert(session.id.clone(), SessionEntry { tx: cmd_tx });
+            .insert(
+                session.id.clone(),
+                SessionEntry {
+                    tx: cmd_tx,
+                    host: host_for_entry,
+                    password: password_for_entry,
+                    sftp_tx: None,
+                },
+            );
 
         Ok(session)
     }
@@ -103,6 +121,48 @@ impl SshManager {
         Ok(())
     }
 
+    // ── SFTP ─────────────────────────────────────────────────────────────────
+
+    /// Lazily creates the SFTP worker thread for a session (if not yet running)
+    /// and returns a clone of the command sender.
+    pub fn sftp_tx(
+        &self,
+        session_id: &str,
+        app: &AppHandle,
+    ) -> Result<SyncSender<SftpCommand>, RepositoryError> {
+        let mut map = self
+            .sessions
+            .lock()
+            .map_err(|e| RepositoryError::Internal(e.to_string()))?;
+
+        let entry = map
+            .get_mut(session_id)
+            .ok_or_else(|| RepositoryError::NotFound(session_id.to_string()))?;
+
+        if let Some(ref tx) = entry.sftp_tx {
+            return Ok(tx.clone());
+        }
+
+        // Spin up a new SFTP worker.
+        let (result_tx, result_rx) =
+            std::sync::mpsc::sync_channel::<Result<SyncSender<SftpCommand>, String>>(1);
+
+        start_sftp_worker(
+            entry.host.clone(),
+            entry.password.clone(),
+            app.clone(),
+            result_tx,
+        );
+
+        let sftp_sender = result_rx
+            .recv_timeout(std::time::Duration::from_secs(15))
+            .map_err(|_| RepositoryError::ConnectionFailed("SFTP connection timed out".to_string()))
+            .and_then(|r| r.map_err(RepositoryError::ConnectionFailed))?;
+
+        entry.sftp_tx = Some(sftp_sender.clone());
+        Ok(sftp_sender)
+    }
+
     /// Disconnect a session and clean up.
     pub fn disconnect(&self, session_id: &str) -> Result<(), RepositoryError> {
         let mut map = self
@@ -110,8 +170,10 @@ impl SshManager {
             .lock()
             .map_err(|e| RepositoryError::Internal(e.to_string()))?;
         if let Some(entry) = map.remove(session_id) {
-            // Signal the session thread to close the channel
             let _ = entry.tx.try_send(PtyInput::Disconnect);
+            if let Some(sftp_tx) = entry.sftp_tx {
+                let _ = sftp_tx.try_send(SftpCommand::Disconnect);
+            }
         }
         Ok(())
     }

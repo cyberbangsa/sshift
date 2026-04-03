@@ -4,6 +4,7 @@ import { Icon } from '@/presentation/shared'
 interface FileTreeProps {
   entries: FileEntry[]
   currentPath: string
+  selectedPath: string | null
   onNavigate: (path: string) => void
   onSelect: (entry: FileEntry) => void
 }
@@ -15,7 +16,7 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
 }
 
-export function FileTree({ entries, currentPath, onNavigate, onSelect }: FileTreeProps) {
+export function FileTree({ entries, currentPath, selectedPath, onNavigate, onSelect }: FileTreeProps) {
   const handleClick = (entry: FileEntry) => {
     if (entry.type === 'directory') {
       onNavigate(entry.path)
@@ -26,9 +27,10 @@ export function FileTree({ entries, currentPath, onNavigate, onSelect }: FileTre
 
   return (
     <div className="flex flex-col">
-      {currentPath !== '/' && (
+      {currentPath && currentPath !== '/' && currentPath !== '' && (
         <div
-          className="flex items-center gap-2 px-3 py-1.5 text-sm text-text-muted cursor-pointer hover:bg-surface-tertiary/50"
+          className="flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer"
+          style={{ color: '#56687a', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem' }}
           onClick={() => {
             const parent = currentPath.split('/').slice(0, -1).join('/') || '/'
             onNavigate(parent)
@@ -36,29 +38,62 @@ export function FileTree({ entries, currentPath, onNavigate, onSelect }: FileTre
           role="button"
           tabIndex={0}
         >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
           <span>..</span>
         </div>
       )}
-      {entries.map((entry) => (
-        <div
-          key={entry.path}
-          className="flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer hover:bg-surface-tertiary/50 transition-colors"
-          onClick={() => handleClick(entry)}
-          role="button"
-          tabIndex={0}
-        >
-          <Icon
-            name={entry.type === 'directory' ? 'folder' : 'chevron-right'}
-            size={14}
-            className={entry.type === 'directory' ? 'text-accent-warning' : 'text-text-muted'}
-          />
-          <span className="flex-1 truncate text-text-primary">{entry.name}</span>
-          <span className="text-xs text-text-muted shrink-0">{entry.permissions}</span>
-          {entry.type === 'file' && (
-            <span className="text-xs text-text-muted shrink-0">{formatSize(entry.size)}</span>
-          )}
-        </div>
-      ))}
+      {entries.map((entry) => {
+        const isSelected = selectedPath === entry.path
+        const isDir = entry.type === 'directory'
+        return (
+          <div
+            key={entry.path}
+            className="flex items-center gap-2 px-3 py-1 cursor-pointer transition-colors"
+            style={{
+              background: isSelected ? 'rgba(168,232,255,0.08)' : 'transparent',
+              borderLeft: isSelected ? '2px solid #a8e8ff' : '2px solid transparent',
+              fontSize: '0.72rem',
+              fontFamily: "'JetBrains Mono', monospace",
+            }}
+            onClick={() => handleClick(entry)}
+            role="button"
+            tabIndex={0}
+          >
+            {/* Icon */}
+            {isDir ? (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#56687a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+              </svg>
+            ) : (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#56687a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" /><polyline points="13 2 13 9 20 9" />
+              </svg>
+            )}
+
+            {/* Name */}
+            <span
+              className="flex-1 truncate"
+              style={{ color: isDir ? '#a8e8ff' : '#c8dae8' }}
+            >
+              {entry.name}
+            </span>
+
+            {/* Size (files only) */}
+            {!isDir && (
+              <span style={{ color: '#56687a', minWidth: '4rem', textAlign: 'right' }}>
+                {formatSize(entry.size)}
+              </span>
+            )}
+
+            {/* Perms */}
+            <span style={{ color: '#3a4a5a', minWidth: '5.5rem', textAlign: 'right' }}>
+              {entry.permissions}
+            </span>
+          </div>
+        )
+      })}
     </div>
   )
 }
