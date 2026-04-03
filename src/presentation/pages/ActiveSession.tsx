@@ -7,6 +7,7 @@ type ContentTab = 'terminal' | 'explorer' | 'transfers'
 
 interface ActiveSessionProps {
   sessionId: string
+  onClosed?: (exitCode: number) => void
 }
 
 const CONTENT_TABS: { id: ContentTab; label: string; icon: React.ReactNode }[] = [
@@ -40,7 +41,7 @@ const CONTENT_TABS: { id: ContentTab; label: string; icon: React.ReactNode }[] =
   },
 ]
 
-export function ActiveSession({ sessionId }: ActiveSessionProps) {
+export function ActiveSession({ sessionId, onClosed }: ActiveSessionProps) {
   const { sessions } = useSessionStore()
   const { hosts }    = useHostStore()
   const { activeTab, setActiveTab } = useUIStore()
@@ -82,6 +83,7 @@ export function ActiveSession({ sessionId }: ActiveSessionProps) {
           <TerminalPane
             ref={terminalRef}
             sessionId={activeSession.id}
+            onClosed={onClosed}
           />
         )}
         {activeTab === 'terminal' && !activeSession && (
