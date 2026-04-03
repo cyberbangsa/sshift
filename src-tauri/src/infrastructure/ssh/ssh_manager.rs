@@ -255,7 +255,11 @@ fn connection_thread(
 
         // 2. Check for remote EOF / shell exit
         if channel.eof() {
-            let _ = app.emit(&format!("terminal-closed:{session_id}"), "");
+            // Wait for the channel to fully close so exit_status() is valid
+            ssh.set_blocking(true);
+            let _ = channel.wait_close();
+            let exit_code = channel.exit_status().unwrap_or(-1);
+            let _ = app.emit(&format!("terminal-closed:{session_id}"), exit_code);
             return;
         }
 
@@ -267,7 +271,13 @@ fn connection_thread(
                     buf[..n].to_vec(),
                 );
             }
-            _ => {} // WouldBlock, EAGAIN, or empty — expected in non-blocking mode
+            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
+            Err(_) => {
+                // Unexpected read error — connection dropped
+                let _ = app.emit(&format!("terminal-closed:{session_id}"), -1i32);
+                return;
+            }
+            _ => {} // Ok(0) — no data yet
         }
 
         std::thread::sleep(poll_sleep);

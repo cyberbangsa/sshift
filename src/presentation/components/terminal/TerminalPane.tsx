@@ -10,6 +10,7 @@ const isTauri =
 
 interface TerminalPaneProps {
   sessionId: string
+  onClosed?: (exitCode: number) => void
 }
 
 export interface TerminalPaneHandle {
@@ -19,7 +20,7 @@ export interface TerminalPaneHandle {
 }
 
 export const TerminalPane = forwardRef<TerminalPaneHandle, TerminalPaneProps>(
-  function TerminalPane({ sessionId }, ref) {
+  function TerminalPane({ sessionId, onClosed }, ref) {
     const containerRef = useRef<HTMLDivElement>(null)
     const terminalRef  = useRef<Terminal | null>(null)
     const fitAddonRef  = useRef<FitAddon | null>(null)
@@ -91,9 +92,15 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, TerminalPaneProps>(
             terminal.write(new Uint8Array(e.payload))
           ).then((fn) => { unlistenOutput = fn })
 
-          listen<string>('terminal-closed:' + sessionId, (e) =>
-            terminal.write('\r\n\x1b[33m[' + (e.payload || 'Session ended') + ']\x1b[0m\r\n')
-          ).then((fn) => { unlistenClosed = fn })
+          listen<number>('terminal-closed:' + sessionId, (e) => {
+            const exitCode = typeof e.payload === 'number' ? e.payload : -1
+            if (exitCode === 0) {
+              terminal.write('\r\n\x1b[33m[Session ended]\x1b[0m\r\n')
+            } else {
+              terminal.write('\r\n\x1b[31m[Connection lost — exit code ' + exitCode + ']\x1b[0m\r\n')
+            }
+            onClosed?.(exitCode)
+          }).then((fn) => { unlistenClosed = fn })
         })
       } else {
         // Browser dev-mode: local echo for UI testing
