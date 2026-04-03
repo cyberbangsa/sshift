@@ -1,5 +1,5 @@
-import { useRef } from 'react'
-import { useSessionStore, useHostStore, useUIStore } from '@/application/stores'
+import { useRef, useState } from 'react'
+import { useSessionStore, useHostStore } from '@/application/stores'
 import { TerminalPane } from '@/presentation/components/terminal'
 import type { TerminalPaneHandle } from '@/presentation/components/terminal'
 
@@ -44,7 +44,7 @@ const CONTENT_TABS: { id: ContentTab; label: string; icon: React.ReactNode }[] =
 export function ActiveSession({ sessionId, onClosed }: ActiveSessionProps) {
   const { sessions } = useSessionStore()
   const { hosts }    = useHostStore()
-  const { activeTab, setActiveTab } = useUIStore()
+  const [activeTab, setActiveTab] = useState<ContentTab>('terminal')
   const terminalRef  = useRef<TerminalPaneHandle>(null)
 
   const activeSession = sessions.get(sessionId)
@@ -78,29 +78,53 @@ export function ActiveSession({ sessionId, onClosed }: ActiveSessionProps) {
       </div>
 
       {/* ── Content area ────────────────────────────────────── */}
-      <div className="flex-1 min-h-0">
-        {activeTab === 'terminal' && activeSession && (
-          <TerminalPane
-            ref={terminalRef}
-            sessionId={activeSession.id}
-            onClosed={onClosed}
-          />
-        )}
-        {activeTab === 'terminal' && !activeSession && (
-          <div className="flex items-center justify-center h-full" style={{ color: '#56687a', fontSize: '0.75rem' }}>
-            Select a session to view terminal
-          </div>
-        )}
-        {activeTab === 'explorer' && (
+      <div className="flex-1 min-h-0 relative">
+        {/* Terminal — always mounted to preserve xterm history */}
+        <div
+          style={{
+            position: 'absolute', inset: 0,
+            visibility: activeTab === 'terminal' ? 'visible' : 'hidden',
+            pointerEvents: activeTab === 'terminal' ? 'auto' : 'none',
+          }}
+        >
+          {activeSession ? (
+            <TerminalPane
+              ref={terminalRef}
+              sessionId={activeSession.id}
+              onClosed={onClosed}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full" style={{ color: '#56687a', fontSize: '0.75rem' }}>
+              Select a session to view terminal
+            </div>
+          )}
+        </div>
+
+        {/* File Explorer */}
+        <div
+          style={{
+            position: 'absolute', inset: 0,
+            visibility: activeTab === 'explorer' ? 'visible' : 'hidden',
+            pointerEvents: activeTab === 'explorer' ? 'auto' : 'none',
+          }}
+        >
           <div className="flex items-center justify-center h-full" style={{ color: '#56687a', fontSize: '0.75rem' }}>
             File Explorer — coming soon
           </div>
-        )}
-        {activeTab === 'transfers' && (
+        </div>
+
+        {/* Transfers */}
+        <div
+          style={{
+            position: 'absolute', inset: 0,
+            visibility: activeTab === 'transfers' ? 'visible' : 'hidden',
+            pointerEvents: activeTab === 'transfers' ? 'auto' : 'none',
+          }}
+        >
           <div className="flex items-center justify-center h-full" style={{ color: '#56687a', fontSize: '0.75rem' }}>
             Transfer Queue — coming soon
           </div>
-        )}
+        </div>
       </div>
 
       {/* ── Bottom status bar ───────────────────────────────── */}
