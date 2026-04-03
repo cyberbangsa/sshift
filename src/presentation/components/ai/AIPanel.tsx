@@ -1,0 +1,119 @@
+import { useState } from 'react'
+import type { AIMessage } from '@/domain/entities'
+import { ChatThread } from './ChatThread'
+import { ActionChips } from './ActionChips'
+
+interface AIPanelProps {
+  messages: AIMessage[]
+  isStreaming: boolean
+  error: string | null
+  onSendMessage: (message: string) => void
+  onClearChat: () => void
+}
+
+export function AIPanel({
+  messages,
+  isStreaming,
+  error,
+  onSendMessage,
+  onClearChat,
+}: AIPanelProps) {
+  const [input, setInput] = useState('')
+
+  const handleSend = () => {
+    const trimmed = input.trim()
+    if (!trimmed || isStreaming) return
+    onSendMessage(trimmed)
+    setInput('')
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSend()
+    }
+  }
+
+  return (
+    <div className="flex flex-col h-full" style={{ background: '#111317' }}>
+      {/* ── Header ──────────────────────────────────────────── */}
+      <div
+        className="flex items-center justify-between px-3 py-2.5 shrink-0"
+        style={{ borderBottom: '1px solid #1d2126' }}
+      >
+        <div className="flex items-center gap-2">
+          {/* Lightning bolt icon */}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#a8e8ff" stroke="#a8e8ff" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+          </svg>
+          <span
+            className="text-[0.6875rem] font-bold tracking-[0.12em] uppercase"
+            style={{ fontFamily: "'Space Grotesk', sans-serif", color: '#e2e2e6' }}
+          >
+            Shift AI Agent
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Status dot */}
+          <span className="w-2 h-2 rounded-full" style={{ background: '#22c55e' }} />
+          {/* Clear button */}
+          <button
+            onClick={onClearChat}
+            className="p-1 rounded hover:bg-white/5 transition-colors"
+            aria-label="Clear chat"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#56687a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* ── Thread ──────────────────────────────────────────── */}
+      <ChatThread messages={messages} isStreaming={isStreaming} />
+
+      {error && (
+        <div
+          className="px-3 py-2 text-[0.6875rem] shrink-0"
+          style={{ color: '#ef4444', background: 'rgba(239,68,68,0.08)', borderTop: '1px solid rgba(239,68,68,0.2)' }}
+        >
+          {error}
+        </div>
+      )}
+
+      {/* ── Contextual action chips ──────────────────────────── */}
+      <ActionChips onAction={onSendMessage} />
+
+      {/* ── Input ───────────────────────────────────────────── */}
+      <div className="px-3 py-3 shrink-0" style={{ borderTop: '1px solid #1d2126' }}>
+        <div
+          className="flex items-center gap-2 px-3 py-2 rounded"
+          style={{ background: '#161a1e', border: '1px solid #252a30' }}
+        >
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask AI about this session…"
+            className="flex-1 bg-transparent outline-none text-text-primary placeholder:text-text-muted"
+            style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.6875rem' }}
+          />
+          <button
+            onClick={handleSend}
+            disabled={!input.trim() || isStreaming}
+            className="shrink-0 p-1 rounded transition-opacity"
+            style={{ opacity: !input.trim() || isStreaming ? 0.3 : 1 }}
+            aria-label="Send message"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a8e8ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}

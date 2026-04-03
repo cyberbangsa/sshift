@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  /* Surfaces — "Obsidian & Electric" palette */
+  --color-surface-primary:  #111317;
+  --color-surface-secondary: #161a1e;
+  --color-surface-tertiary:  #1d2126;
+  --color-surface-high:      #252a30;
+  /* Electric Cyan accent */
+  --color-accent-primary:   #a8e8ff;
+  --color-accent-cyan-dark: #00d4ff;
+  /* Semantic accents */
+  --color-accent-success:  #22c55e;
+  --color-accent-warning:  #f59e0b;
+  --color-accent-danger:   #ef4444;
+  /* Text — DESIGN.md: no pure white */
+  --color-text-primary:   #e2e2e6;
+  --color-text-secondary: #8a9bb0;
+  --color-text-muted:     #56687a;
+  /* Borders */
+  --color-border-default: #252a30;
+  --color-border-focus:   #a8e8ff;
+  /* Ghost border (outline_variant @20% opacity handled inline) */
+  --color-border-ghost:   #3c494e;
+  /* Typography — Dual-Core Engine */
+  --font-family-sans:    'Inter', system-ui, -apple-system, sans-serif;
+  --font-family-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --font-family-mono:    'JetBrains Mono', 'Fira Code', monospace;
+}
+
+body {
+  @apply bg-surface-primary text-text-primary font-sans;
+  margin: 0;
+  min-height: 100vh;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-surface-secondary;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-surface-tertiary rounded;
+}
