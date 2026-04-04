@@ -4,7 +4,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { useHostStore, useSessionStore, useUIStore, useSettingsStore, useTerminalStore } from '@/application/stores'
 import { useHost, useSession, useAIAgent } from '@/application/hooks'
 import { hostRepository, sessionRepository } from '@/infrastructure/repositories'
-import { HostList, AddHostModal } from '@/presentation/components/sidebar'
+import { AddHostModal } from '@/presentation/components/sidebar'
 import { AIPanel } from '@/presentation/components/ai'
 import { Button, Icon, Modal } from '@/presentation/shared'
 import { APP_NAME } from '@/config'
@@ -24,10 +24,8 @@ const NAV_ITEMS = [
 export function AppLayout({ children }: AppLayoutProps) {
   const [isAddHostOpen, setIsAddHostOpen] = useState(false)
   const [activeNav, setActiveNav]         = useState<string | null>(null)
-  const [searchQuery, setSearchQuery]     = useState('')
 
   // Connection state
-  const [connectingHostId, setConnectingHostId] = useState<string | null>(null)
   const [connectError, setConnectError]         = useState<string | null>(null)
   const errorTimerRef                           = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -37,7 +35,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [showPendingPw, setShowPendingPw]       = useState(false)
 
   const { isAIPanelVisible, toggleAIPanel, openSettings } = useUIStore()
-  const { selectedHostId, hosts: allHosts } = useHostStore()
+  const { hosts: allHosts } = useHostStore()
   const { sessions, activeSessionId, setActiveSession } = useSessionStore()
   const { activeTerminalHandle } = useTerminalStore()
 
@@ -72,7 +70,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   const { messages, isStreaming, error, sendMessage, abort, clearMessages, executionMode, setExecutionMode } = useAIAgent(agentRunCommand, agentReadFile, activeHostForRules?.aiRules)
   const { loadApiKey, isApiKeyLoaded } = useSettingsStore()
-  const { hosts, saveHost, deleteHost, selectHost } = useHost(hostRepository)
+  const { hosts, saveHost } = useHost(hostRepository)
   const { connectHost, disconnectSession } = useSession(sessionRepository)
 
   const handleUpdateHostRules = useCallback(
@@ -96,7 +94,6 @@ export function AppLayout({ children }: AppLayoutProps) {
         setPendingPassword('')
         return
       }
-      setConnectingHostId(host.id)
       setConnectError(null)
       try {
         await connectHost(host)
@@ -106,8 +103,6 @@ export function AppLayout({ children }: AppLayoutProps) {
         setConnectError(`${msg}\n${debug}`)
         if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
         errorTimerRef.current = setTimeout(() => setConnectError(null), 10000)
-      } finally {
-        setConnectingHostId(null)
       }
     },
     [connectHost, sessions, setActiveSession],
@@ -133,17 +128,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     }
   }, [isApiKeyLoaded, loadApiKey])
 
-  const connectedHostIds = Array.from(sessions.values())
-    .filter((s) => s.status === 'connected')
-    .map((s) => s.hostId)
 
-  const filteredHosts = searchQuery.trim()
-    ? hosts.filter(
-        (h) =>
-          h.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          h.hostname.toLowerCase().includes(searchQuery.toLowerCase()),
-      )
-    : hosts
 
   /* ── SESSION MODE (any open sessions, including dashboard tab) ── */
   if (sessions.size > 0) {
@@ -416,73 +401,21 @@ export function AppLayout({ children }: AppLayoutProps) {
               {APP_NAME}
             </span>
           </div>
-          <div className="flex items-center gap-0.5">
-            <button className="p-1 rounded hover:bg-white/5 transition-colors" aria-label="Notifications">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a9bb0" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
-              </svg>
-            </button>
-            <button
-              className="p-1 rounded hover:bg-white/5 transition-colors"
-              aria-label="Settings"
-              onClick={() => openSettings()}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a9bb0" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-              </svg>
-            </button>
-            <div
-              className="w-6 h-6 rounded-full ml-0.5 flex items-center justify-center text-[0.5rem] font-bold"
-              style={{ background: 'linear-gradient(135deg, #a8e8ff, #00d4ff)', color: '#0c0e11' }}
-            >
-              R
-            </div>
-          </div>
-        </div>
-
-        {/* Search bar */}
-        <div className="px-2 py-2" style={{ borderBottom: '1px solid #1d2126' }}>
-          <div className="flex items-center gap-2 px-2 py-1.5 rounded" style={{ background: '#1d2126' }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#56687a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          <button
+            className="p-1 rounded hover:bg-white/5 transition-colors"
+            aria-label="Settings"
+            onClick={() => openSettings()}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a9bb0" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
             </svg>
-            <input
-              type="text"
-              placeholder="Search connections…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent outline-none text-[0.6875rem] text-text-secondary placeholder:text-text-muted"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            />
-            <span
-              className="text-[0.6rem] px-1 py-0.5 rounded font-mono"
-              style={{ border: '1px solid #3c494e', color: '#a8e8ff', letterSpacing: '0.02em', lineHeight: 1 }}
-            >
-              ⌘K
-            </span>
-          </div>
+          </button>
         </div>
 
-        {/* CONNECTIONS */}
+        {/* Nav items */}
         <div className="flex-1 overflow-y-auto">
-          <div className="px-3 pt-3 pb-1">
-            <span className="text-[0.6rem] font-semibold tracking-[0.15em] uppercase" style={{ color: '#56687a' }}>
-              Connections
-            </span>
-          </div>
-          <HostList
-            hosts={filteredHosts}
-            selectedHostId={selectedHostId}
-            connectedHostIds={connectedHostIds}
-            connectingHostId={connectingHostId}
-            onSelectHost={selectHost}
-            onConnectHost={handleConnect}
-            onDeleteHost={deleteHost}
-          />
-
-          {/* Nav items */}
-          <div className="px-2 pt-4 pb-2 flex flex-col gap-0.5">
+          <div className="px-2 pt-3 pb-2 flex flex-col gap-0.5">
             {NAV_ITEMS.map((item) => (
               <button
                 key={item.id}
