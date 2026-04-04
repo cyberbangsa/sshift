@@ -2,7 +2,6 @@ import { useState } from 'react'
 import type { AIMessage } from '@/domain/entities'
 import type { ExecutionMode } from '@/application/stores'
 import { ChatThread } from './ChatThread'
-import { ActionChips } from './ActionChips'
 
 interface AIPanelProps {
   messages: AIMessage[]
@@ -140,9 +139,6 @@ export function AIPanel({
           {error}
         </div>
       )}
-
-      {/* ── Contextual action chips ──────────────────────────── */}
-      <ActionChips onAction={onSendMessage} />
 
       {/* ── Input ───────────────────────────────────────────── */}
       <div className="px-3 py-3 shrink-0" style={{ borderTop: '1px solid #1d2126' }}>

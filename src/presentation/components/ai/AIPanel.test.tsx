@@ -66,14 +66,6 @@ describe('AIPanel', () => {
     expect(screen.getByText('Something went wrong')).toBeInTheDocument()
   })
 
-  it('should render action chips', () => {
-    render(<AIPanel {...defaultProps} />)
-
-    expect(screen.getByText('Run with sudo')).toBeInTheDocument()
-    expect(screen.getByText('Check ownership')).toBeInTheDocument()
-    expect(screen.getByText('Explain error in detail')).toBeInTheDocument()
-  })
-
   it('should disable send button while streaming', () => {
     render(<AIPanel {...defaultProps} isStreaming={true} />)
 
