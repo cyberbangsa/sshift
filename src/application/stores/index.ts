@@ -17,4 +17,4 @@ export { useSettingsStore } from './settingsStore'
 export type { SettingsStore } from './settingsStore'
 
 export { useTerminalStore } from './terminalStore'
-export type { TerminalStore } from './terminalStore'
+export type { TerminalStore, TerminalHandle } from './terminalStore'
