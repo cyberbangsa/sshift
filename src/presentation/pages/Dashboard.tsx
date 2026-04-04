@@ -239,7 +239,7 @@ function HostCard({
           )}
           <button
             onClick={(e) => { e.stopPropagation(); onEdit(host) }}
-            className="opacity-0 group-hover:opacity-100 p-1 rounded transition-all hover:bg-white/10"
+            className="p-1 rounded transition-all hover:bg-white/10"
             title="Edit"
           >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8a9bb0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -249,7 +249,7 @@ function HostCard({
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(host.id) }}
-            className="opacity-0 group-hover:opacity-100 p-1 rounded transition-all hover:bg-red-500/10"
+            className="p-1 rounded transition-all hover:bg-red-500/10"
             title="Delete"
           >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
