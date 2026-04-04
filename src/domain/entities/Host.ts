@@ -1,3 +1,9 @@
+export interface AIRule {
+  id: string
+  name: string
+  content: string
+}
+
 export interface Host {
   id: string
   label: string
@@ -9,5 +15,7 @@ export interface Host {
   password?: string
   privateKeyPath?: string
   tags: string[]
+  /** Per-host rules injected into the AI agent's system prompt */
+  aiRules?: AIRule[]
   createdAt: Date
 }

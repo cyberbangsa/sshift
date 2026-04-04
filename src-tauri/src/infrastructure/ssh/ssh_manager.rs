@@ -9,6 +9,7 @@ use std::net::TcpStream;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{sync_channel, Receiver, SyncSender, TryRecvError};
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter};
 
 use crate::domain::entities::{AuthMethod, Host, Session, SessionStatus};
@@ -245,6 +246,10 @@ fn connection_thread(
         return;
     }
 
+    // Ask the server to send SSH keepalive messages every 30 s.
+    // We also call keepalive_send() manually in the loop for the client side.
+    ssh.set_keepalive(true, 30);
+
     // ── PTY shell channel ──────────────────────────────────────────────────────
     let mut channel = match ssh.channel_session() {
         Ok(c) => c,
@@ -288,14 +293,30 @@ fn connection_thread(
     ssh.set_blocking(false);
 
     let mut buf = vec![0u8; 8192];
-    let poll_sleep = std::time::Duration::from_millis(5);
+    let poll_sleep = Duration::from_millis(5);
+    // Send an SSH-level keepalive every 25 s to prevent server-side timeouts.
+    let keepalive_interval = Duration::from_secs(25);
+    let mut last_keepalive = Instant::now();
+    // Require EOF to be observed this many consecutive idle iterations before
+    // we treat it as a genuine close.  libssh2 can transiently report eof()
+    // between bursts of output; the counter prevents a false positive from
+    // killing a live session.
+    let mut consecutive_eof: u32 = 0;
+    const EOF_CONFIRM_ITERS: u32 = 10;
 
     loop {
+        // 0. Send SSH keepalive if due
+        if last_keepalive.elapsed() >= keepalive_interval {
+            ssh.set_blocking(true);
+            let _ = ssh.keepalive_send();
+            ssh.set_blocking(false);
+            last_keepalive = Instant::now();
+        }
+
         // 1. Drain all pending input commands before reading output
         loop {
             match cmd_rx.try_recv() {
                 Ok(PtyInput::Data(data)) => {
-                    // Temporarily blocking to guarantee full write
                     ssh.set_blocking(true);
                     let _ = channel.write_all(&data);
                     let _ = channel.flush();
@@ -315,31 +336,58 @@ fn connection_thread(
             }
         }
 
-        // 2. Check for remote EOF / shell exit
-        if channel.eof() {
-            // Wait for the channel to fully close so exit_status() is valid
-            ssh.set_blocking(true);
-            let _ = channel.wait_close();
-            let exit_code = channel.exit_status().unwrap_or(-1);
-            let _ = app.emit(&format!("terminal-closed:{session_id}"), exit_code);
-            return;
+        // 2. Read ALL available output FIRST — never check EOF before draining.
+        //    In libssh2 non-blocking mode eof() can be set while data is still
+        //    buffered; reading first ensures we never drop output.
+        let mut got_data = false;
+        loop {
+            match channel.read(&mut buf) {
+                Ok(n) if n > 0 => {
+                    got_data = true;
+                    let _ = app.emit(
+                        &format!("terminal-output:{session_id}"),
+                        buf[..n].to_vec(),
+                    );
+                }
+                // libssh2 EAGAIN surfaces as any of these — break and sleep.
+                Err(e) if matches!(
+                    e.kind(),
+                    std::io::ErrorKind::WouldBlock
+                        | std::io::ErrorKind::TimedOut
+                        | std::io::ErrorKind::Interrupted
+                ) => break,
+                Err(_) => {
+                    // Genuine I/O error — connection dropped.
+                    let _ = app.emit(&format!("terminal-closed:{session_id}"), -1i32);
+                    return;
+                }
+                // Ok(0) means no bytes this round (or channel EOF in libssh2).
+                _ => break,
+            }
         }
 
-        // 3. Read available output (non-blocking — returns immediately)
-        match channel.read(&mut buf) {
-            Ok(n) if n > 0 => {
-                let _ = app.emit(
-                    &format!("terminal-output:{session_id}"),
-                    buf[..n].to_vec(),
-                );
-            }
-            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
-            Err(_) => {
-                // Unexpected read error — connection dropped
-                let _ = app.emit(&format!("terminal-closed:{session_id}"), -1i32);
+        // 3. Check for genuine channel close AFTER draining all data.
+        //    Only act when the channel says both eof() AND is_closed(), or when
+        //    eof() has been consistently true for several idle iterations.
+        if got_data {
+            consecutive_eof = 0; // reset: we're still receiving output
+        } else if channel.eof() {
+            consecutive_eof += 1;
+            if consecutive_eof >= EOF_CONFIRM_ITERS {
+                // Drain any final bytes one more time before closing.
+                while let Ok(n) = channel.read(&mut buf) {
+                    if n == 0 { break; }
+                    let _ = app.emit(
+                        &format!("terminal-output:{session_id}"),
+                        buf[..n].to_vec(),
+                    );
+                }
+                let exit_code = channel.exit_status().unwrap_or(0);
+                let _ = app.emit(&format!("terminal-closed:{session_id}"), exit_code);
                 return;
             }
-            _ => {} // Ok(0) — no data yet
+        } else {
+            consecutive_eof = 0;
         }
 
         std::thread::sleep(poll_sleep);

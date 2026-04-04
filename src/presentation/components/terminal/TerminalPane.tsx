@@ -17,6 +17,11 @@ export interface TerminalPaneHandle {
   write: (data: string | Uint8Array) => void
   clear: () => void
   focus: () => void
+  /** Send raw input to the SSH PTY (actually executes commands). */
+  sendInput: (data: string) => void
+  /** Collect PTY output for up to timeoutMs ms, stopping early when a shell
+   *  prompt is detected. Returns ANSI-stripped text. */
+  captureOutput: (timeoutMs?: number) => Promise<string>
 }
 
 export const TerminalPane = forwardRef<TerminalPaneHandle, TerminalPaneProps>(
@@ -29,7 +34,52 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, TerminalPaneProps>(
       write: (data) => terminalRef.current?.write(data),
       clear: () => terminalRef.current?.clear(),
       focus: () => terminalRef.current?.focus(),
-    }))
+
+      sendInput: (data) => {
+        if (!isTauri) {
+          // Dev mode: echo locally
+          terminalRef.current?.write(data)
+          return
+        }
+        const bytes = Array.from(new TextEncoder().encode(data))
+        import('@tauri-apps/api/core').then(({ invoke }) =>
+          invoke('write_to_pty', { sessionId, data: bytes }).catch(console.error)
+        )
+      },
+
+      captureOutput: (timeoutMs = 6000) =>
+        new Promise<string>((resolve) => {
+          if (!isTauri) { resolve(''); return }
+          // Strip ANSI escape sequences from collected output
+          const ANSI_RE = /\x1b(?:[@-Z\\-_]|\[[0-9;]*[ -/]*[@-~]|\].*?(?:\x07|\x1b\\))/g
+          // Shell prompt pattern — $, #, %, > (possibly coloured), followed by optional space
+          const PROMPT_RE = /[\$#%>]\s*$/
+          let buffer = ''
+          let unlisten: (() => void) | undefined
+          let finished = false
+
+          const finish = () => {
+            if (finished) return
+            finished = true
+            clearTimeout(timer)
+            unlisten?.()
+            resolve(buffer.replace(ANSI_RE, '').trim())
+          }
+
+          const timer = setTimeout(finish, timeoutMs)
+
+          import('@tauri-apps/api/event').then(({ listen }) => {
+            listen<number[]>('terminal-output:' + sessionId, (e) => {
+              const chunk = new TextDecoder().decode(new Uint8Array(e.payload))
+              buffer += chunk
+              // Stop early once we detect a shell prompt
+              if (PROMPT_RE.test(buffer.replace(ANSI_RE, ''))) {
+                setTimeout(finish, 80) // short tail to catch any remaining chars
+              }
+            }).then((fn) => { unlisten = fn })
+          })
+        }),
+    }), [sessionId])
 
     useEffect(() => {
       if (!containerRef.current) return

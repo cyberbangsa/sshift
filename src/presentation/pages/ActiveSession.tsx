@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSessionStore, useHostStore } from '@/application/stores'
+import { useTerminalStore } from '@/application/stores'
 import { TerminalPane } from '@/presentation/components/terminal'
 import { FileExplorer } from '@/presentation/components/explorer'
 import type { TerminalPaneHandle } from '@/presentation/components/terminal'
@@ -36,7 +37,17 @@ export function ActiveSession({ sessionId, onClosed }: ActiveSessionProps) {
   const { sessions } = useSessionStore()
   const { hosts }    = useHostStore()
   const [activeTab, setActiveTab] = useState<ContentTab>('terminal')
-  const terminalRef  = useRef<TerminalPaneHandle>(null)
+  const setActiveTerminalHandle = useTerminalStore((s) => s.setActiveTerminalHandle)
+
+  // Callback ref: registers the terminal handle in the global store when the pane mounts
+  const handleTerminalRef = useCallback((handle: TerminalPaneHandle | null) => {
+    setActiveTerminalHandle(handle)
+  }, [setActiveTerminalHandle])
+
+  // Clear the handle when this session unmounts
+  useEffect(() => {
+    return () => setActiveTerminalHandle(null)
+  }, [setActiveTerminalHandle])
 
   const activeSession = sessions.get(sessionId)
   const activeHost    = activeSession ? hosts.find((h) => h.id === activeSession.hostId) : null
@@ -80,7 +91,7 @@ export function ActiveSession({ sessionId, onClosed }: ActiveSessionProps) {
         >
           {activeSession ? (
             <TerminalPane
-              ref={terminalRef}
+              ref={handleTerminalRef}
               sessionId={activeSession.id}
               onClosed={onClosed}
             />

@@ -1,5 +1,6 @@
 import { RouterProvider } from '@tanstack/react-router'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, Component } from 'react'
+import type { ReactNode } from 'react'
 import { router } from './router'
 import { AppLayout } from '@/presentation/layouts'
 import { Dashboard, Settings } from '@/presentation/pages'
@@ -12,6 +13,29 @@ interface SessionError {
   hostLabel: string
   exitCode: number
 }
+
+// ── Error Boundary ────────────────────────────────────────────────────────────
+interface EBState { error: Error | null }
+class ErrorBoundary extends Component<{ children: ReactNode }, EBState> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { error: null }
+  }
+  static getDerivedStateFromError(error: Error) { return { error } }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: 32, fontFamily: 'monospace', color: '#ef4444', background: '#0c0e11', height: '100vh' }}>
+          <p style={{ color: '#fbbf24', marginBottom: 8, fontWeight: 'bold' }}>Render Error (open DevTools for full stack)</p>
+          <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>{this.state.error.message}</pre>
+          <pre style={{ whiteSpace: 'pre-wrap', fontSize: 11, color: '#56687a', marginTop: 12 }}>{this.state.error.stack}</pre>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 function AppContent() {
   const { sessions, activeSessionId, removeSession, setActiveSession } = useSessionStore()
@@ -139,7 +163,7 @@ export default function App() {
   const { isSettingsOpen } = useUIStore()
 
   return (
-    <>
+    <ErrorBoundary>
       <AppLayout>
         <AppContent />
       </AppLayout>
@@ -148,7 +172,7 @@ export default function App() {
           <Settings />
         </div>
       )}
-    </>
+    </ErrorBoundary>
   )
 }
 

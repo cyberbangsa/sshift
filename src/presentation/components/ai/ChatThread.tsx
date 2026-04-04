@@ -1,13 +1,16 @@
 import { useEffect, useRef } from 'react'
 import type { AIMessage } from '@/domain/entities'
+import type { ExecutionMode } from '@/application/stores'
 import { MessageBubble } from './MessageBubble'
 
 interface ChatThreadProps {
   messages: AIMessage[]
   isStreaming: boolean
+  onRunCommand?: (cmd: string) => void
+  executionMode?: ExecutionMode
 }
 
-export function ChatThread({ messages, isStreaming }: ChatThreadProps) {
+export function ChatThread({ messages, isStreaming, onRunCommand, executionMode = 'manual' }: ChatThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -30,7 +33,12 @@ export function ChatThread({ messages, isStreaming }: ChatThreadProps) {
         </div>
       )}
       {messages.map((message) => (
-        <MessageBubble key={message.id} message={message} />
+        <MessageBubble
+          key={message.id}
+          message={message}
+          onRunCommand={onRunCommand}
+          executionMode={executionMode}
+        />
       ))}
       {isStreaming && (
         <div className="flex justify-start gap-2.5">

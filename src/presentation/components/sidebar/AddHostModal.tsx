@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react'
-import type { Host } from '@/domain/entities'
+import type { Host, AIRule } from '@/domain/entities'
 import { Modal, Input, Button } from '@/presentation/shared'
 import { DEFAULT_SSH_PORT } from '@/config'
+import { HostRulesPanel } from '@/presentation/components/ai/HostRulesPanel'
 
 /** Opens a native Tauri file picker, returns 'use-file-input' when not in Tauri. */
 async function pickKeyFile(): Promise<string | null | 'use-file-input'> {
@@ -50,6 +51,8 @@ export function AddHostModal({ isOpen, onClose, onSave, editHost }: AddHostModal
   const [password, setPassword]             = useState(editHost?.password ?? '')
   const [showPassword, setShowPassword]     = useState(false)
   const [tags, setTags] = useState(editHost?.tags.join(', ') ?? '')
+  const [aiRules, setAiRules] = useState<AIRule[]>(editHost?.aiRules ?? [])
+  const [activeTab, setActiveTab] = useState<'connection' | 'rules'>('connection')
   const [errors, setErrors] = useState<FormErrors>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -104,6 +107,7 @@ export function AddHostModal({ isOpen, onClose, onSave, editHost }: AddHostModal
         .split(',')
         .map((t) => t.trim())
         .filter(Boolean),
+      aiRules,
       createdAt: editHost?.createdAt ?? new Date(),
     }
 
@@ -113,11 +117,43 @@ export function AddHostModal({ isOpen, onClose, onSave, editHost }: AddHostModal
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={editHost ? 'Edit Host' : 'Add Host'}>
-      <div className="flex flex-col gap-3">
-        <Input label="Label" value={label} onChange={setLabel} placeholder="My Server" error={errors.label} />
-        <Input label="Hostname" value={hostname} onChange={setHostname} placeholder="192.168.1.1" error={errors.hostname} />
-        <Input label="Port" value={port} onChange={setPort} placeholder="22" type="number" error={errors.port} />
-        <Input label="Username" value={username} onChange={setUsername} placeholder="root" error={errors.username} />
+      {/* Tab bar */}
+      <div className="flex gap-0 mb-3" style={{ borderBottom: '1px solid #1d2126' }}>
+        {(['connection', 'rules'] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className="px-3 py-1.5 text-[0.6875rem] font-medium capitalize transition-colors"
+            style={{
+              fontFamily: "'Inter', sans-serif",
+              color: activeTab === tab ? '#a8e8ff' : '#56687a',
+              borderBottom: activeTab === tab ? '2px solid #a8e8ff' : '2px solid transparent',
+              marginBottom: -1,
+            }}
+          >
+            {tab === 'rules' ? (
+              <span className="flex items-center gap-1">
+                AI Rules
+                {aiRules.length > 0 && (
+                  <span
+                    className="inline-flex items-center justify-center rounded-full text-[0.5rem] font-bold"
+                    style={{ background: '#a8e8ff', color: '#0c0e11', width: 14, height: 14, fontFamily: "'Inter', sans-serif" }}
+                  >
+                    {aiRules.length}
+                  </span>
+                )}
+              </span>
+            ) : 'Connection'}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'connection' && (
+        <div className="flex flex-col gap-3">
+          <Input label="Label" value={label} onChange={setLabel} placeholder="My Server" error={errors.label} />
+          <Input label="Hostname" value={hostname} onChange={setHostname} placeholder="192.168.1.1" error={errors.hostname} />
+          <Input label="Port" value={port} onChange={setPort} placeholder="22" type="number" error={errors.port} />
+          <Input label="Username" value={username} onChange={setUsername} placeholder="root" error={errors.username} />
 
         <div className="flex flex-col gap-1">
           <label className="text-sm text-text-secondary font-medium">Auth Method</label>
@@ -236,15 +272,25 @@ export function AddHostModal({ isOpen, onClose, onSave, editHost }: AddHostModal
 
         <Input label="Tags (comma-separated)" value={tags} onChange={setTags} placeholder="production, web" />
 
-        <div className="flex justify-end gap-2 mt-2">
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleSubmit}>
-            {editHost ? 'Update' : 'Add Host'}
-          </Button>
+          <div className="flex justify-end gap-2 mt-2">
+            <Button variant="secondary" onClick={onClose}>Cancel</Button>
+            <Button variant="primary" onClick={handleSubmit}>{editHost ? 'Update' : 'Add Host'}</Button>
+          </div>
         </div>
-      </div>
+      )}
+
+      {activeTab === 'rules' && (
+        <div className="flex flex-col gap-3">
+          <p className="text-[0.6rem] leading-relaxed" style={{ color: '#56687a', fontFamily: "'Inter', sans-serif" }}>
+            Rules are injected into the AI agent's system prompt whenever you connect to this host. The AI will always follow them.
+          </p>
+          <HostRulesPanel rules={aiRules} onChange={setAiRules} />
+          <div className="flex justify-end gap-2 mt-2">
+            <Button variant="secondary" onClick={onClose}>Cancel</Button>
+            <Button variant="primary" onClick={handleSubmit}>{editHost ? 'Update' : 'Add Host'}</Button>
+          </div>
+        </div>
+      )}
     </Modal>
   )
 }

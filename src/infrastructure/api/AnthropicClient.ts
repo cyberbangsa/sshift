@@ -19,7 +19,7 @@ export class AnthropicClient implements IAIClient {
     this.maxTokens = config.maxTokens ?? 4096
   }
 
-  async sendMessage(history: AIMessage[], userMessage: string): Promise<string> {
+  async sendMessage(history: AIMessage[], userMessage: string, signal?: AbortSignal): Promise<string> {
     const messages = [
       ...history.map((msg) => ({
         role: msg.role as 'user' | 'assistant',
@@ -28,15 +28,18 @@ export class AnthropicClient implements IAIClient {
       { role: 'user' as const, content: userMessage },
     ]
 
-    const response = await this.client.messages.create({
-      model: this.model,
-      max_tokens: this.maxTokens,
-      system:
-        'You are SSHift AI, an assistant that helps users manage SSH connections, ' +
-        'navigate remote file systems, and execute commands. You can suggest commands ' +
-        'and explain their effects. Be concise and security-conscious.',
-      messages,
-    })
+    const response = await this.client.messages.create(
+      {
+        model: this.model,
+        max_tokens: this.maxTokens,
+        system:
+          'You are SSHift AI, an assistant that helps users manage SSH connections, ' +
+          'navigate remote file systems, and execute commands. You can suggest commands ' +
+          'and explain their effects. Be concise and security-conscious.',
+        messages,
+      },
+      { signal },
+    )
 
     const textBlock = response.content.find((block) => block.type === 'text')
     return textBlock ? textBlock.text : ''

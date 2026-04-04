@@ -1,7 +1,7 @@
 import type { AIMessage } from '@/domain/entities'
 
 export interface IAIClient {
-  sendMessage(messages: AIMessage[], userMessage: string): Promise<string>
+  sendMessage(messages: AIMessage[], userMessage: string, signal?: AbortSignal): Promise<string>
 }
 
 export class AIMessageError extends Error {
@@ -13,15 +13,15 @@ export class AIMessageError extends Error {
 
 /** Sends a user message to the AI assistant and returns the response. */
 export class SendAIMessage {
-  constructor(private readonly aiClient: IAIClient) {}
+  constructor(private readonly aiClient: IAIClient) { }
 
-  async execute(history: AIMessage[], userMessage: string): Promise<AIMessage> {
+  async execute(history: AIMessage[], userMessage: string, signal?: AbortSignal): Promise<AIMessage> {
     if (!userMessage.trim()) {
       throw new AIMessageError('Message cannot be empty')
     }
 
     try {
-      const responseContent = await this.aiClient.sendMessage(history, userMessage)
+      const responseContent = await this.aiClient.sendMessage(history, userMessage, signal)
 
       const assistantMessage: AIMessage = {
         id: crypto.randomUUID(),
