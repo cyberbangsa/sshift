@@ -2,9 +2,9 @@ import { RouterProvider } from '@tanstack/react-router'
 import { useState, useCallback } from 'react'
 import { router } from './router'
 import { AppLayout } from '@/presentation/layouts'
-import { Dashboard } from '@/presentation/pages/Dashboard'
+import { Dashboard, Settings } from '@/presentation/pages'
 import { ActiveSession } from '@/presentation/pages/ActiveSession'
-import { useSessionStore } from '@/application/stores'
+import { useSessionStore, useUIStore } from '@/application/stores'
 import { sessionRepository } from '@/infrastructure/repositories'
 
 interface SessionError {
@@ -136,11 +136,20 @@ function AppContent() {
 }
 
 export default function App() {
+  const { isSettingsOpen } = useUIStore()
+
   return (
-    <AppLayout>
-      <AppContent />
-    </AppLayout>
+    <>
+      <AppLayout>
+        <AppContent />
+      </AppLayout>
+      {isSettingsOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100 }}>
+          <Settings />
+        </div>
+      )}
+    </>
   )
 }
 
-export { Dashboard, ActiveSession }
+export { Dashboard, ActiveSession, Settings }

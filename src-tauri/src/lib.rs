@@ -6,6 +6,7 @@ use commands::{
     file_commands::*,
     host_commands::*,
     session_commands::*,
+    settings_commands::*,
     transfer_commands::*,
 };
 use infrastructure::ssh::SshManager;
@@ -45,6 +46,9 @@ pub fn run() {
             rename_remote_file,
             get_transfer_status,
             cancel_transfer,
+            get_api_key,
+            set_api_key,
+            delete_api_key,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

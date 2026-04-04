@@ -1,0 +1,5 @@
+export { SettingsSidebar } from './SettingsSidebar'
+export type { SettingsSection } from './SettingsSidebar'
+export { AISettingsSection } from './AISettingsSection'
+export { TerminalSettingsSection } from './TerminalSettingsSection'
+export { ConnectionSettingsSection } from './ConnectionSettingsSection'
