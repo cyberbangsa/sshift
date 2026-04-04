@@ -115,14 +115,11 @@ export function AIPanel({
       )}
 
       {/* ── Input ───────────────────────────────────────────── */}
-      <div className="px-3 py-3 shrink-0" style={{ borderTop: '1px solid #1d2126' }}>
-        <div
-          className="flex items-center gap-2 px-3 py-2 rounded"
-          style={{ background: '#161a1e', border: '1px solid #252a30' }}
-        >
-          {/* Mode toggle */}
+      <div className="px-3 pt-2 pb-3 shrink-0 flex flex-col gap-1.5" style={{ borderTop: '1px solid #1d2126' }}>
+        {/* Mode toggle row */}
+        <div className="flex items-center gap-1">
           <div
-            className="flex items-center rounded overflow-hidden shrink-0 text-[0.55rem] font-semibold"
+            className="flex items-center rounded overflow-hidden text-[0.55rem] font-semibold"
             style={{ border: '1px solid #252a30', fontFamily: "'Inter', sans-serif" }}
           >
             <button
@@ -146,8 +143,12 @@ export function AIPanel({
               Auto
             </button>
           </div>
-          {/* divider */}
-          <span className="w-px shrink-0 self-stretch" style={{ background: '#252a30' }} />
+        </div>
+        {/* Text field row */}
+        <div
+          className="flex items-center gap-2 px-3 py-2 rounded"
+          style={{ background: '#161a1e', border: '1px solid #252a30' }}
+        >
           <input
             type="text"
             value={input}
