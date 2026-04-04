@@ -46,7 +46,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     activeTerminalHandle?.focus()
   }, [activeTerminalHandle])
 
-  const { messages, isStreaming, error, sendMessage, clearMessages } = useAIAgent(onRunCommand)
+  const { messages, isStreaming, error, sendMessage, clearMessages, executionMode, setExecutionMode } = useAIAgent(onRunCommand)
   const { loadApiKey, isApiKeyLoaded } = useSettingsStore()
   const { hosts, saveHost, deleteHost, selectHost } = useHost(hostRepository)
   const { connectHost, disconnectSession } = useSession(sessionRepository)
@@ -336,6 +336,8 @@ export function AppLayout({ children }: AppLayoutProps) {
               onSendMessage={sendMessage}
               onClearChat={clearMessages}
               onRunCommand={onRunCommand}
+              executionMode={executionMode}
+              onSetExecutionMode={setExecutionMode}
             />
           </div>
         </div>
@@ -526,6 +528,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                 onSendMessage={sendMessage}
                 onClearChat={clearMessages}
                 onRunCommand={onRunCommand}
+                executionMode={executionMode}
+                onSetExecutionMode={setExecutionMode}
               />
             </div>
           )}

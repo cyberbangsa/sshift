@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { AIMessage } from '@/domain/entities'
-import { useAIStore } from '@/application/stores'
+import type { ExecutionMode } from '@/application/stores'
 import { ChatThread } from './ChatThread'
 import { ActionChips } from './ActionChips'
 
@@ -11,6 +11,8 @@ interface AIPanelProps {
   onSendMessage: (message: string) => void
   onClearChat: () => void
   onRunCommand?: (cmd: string) => void
+  executionMode?: ExecutionMode
+  onSetExecutionMode?: (mode: ExecutionMode) => void
 }
 
 export function AIPanel({
@@ -20,9 +22,10 @@ export function AIPanel({
   onSendMessage,
   onClearChat,
   onRunCommand,
+  executionMode = 'manual',
+  onSetExecutionMode,
 }: AIPanelProps) {
   const [input, setInput] = useState('')
-  const { executionMode, setExecutionMode } = useAIStore()
   const isAutoMode = executionMode === 'auto'
 
   const handleSend = () => {
@@ -65,7 +68,7 @@ export function AIPanel({
             style={{ border: '1px solid #252a30', fontFamily: "'Inter', sans-serif" }}
           >
             <button
-              onClick={() => setExecutionMode('manual')}
+              onClick={() => onSetExecutionMode?.('manual')}
               className="px-2 py-0.5 transition-colors"
               style={{
                 background: !isAutoMode ? 'rgba(168,232,255,0.12)' : 'transparent',
@@ -75,7 +78,7 @@ export function AIPanel({
               Manual
             </button>
             <button
-              onClick={() => setExecutionMode('auto')}
+              onClick={() => onSetExecutionMode?.('auto')}
               className="px-2 py-0.5 transition-colors"
               style={{
                 background: isAutoMode ? 'rgba(251,191,36,0.12)' : 'transparent',
