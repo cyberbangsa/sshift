@@ -11,9 +11,15 @@ interface FilePaneProps {
   isLoading: boolean
   error: string | null
   selectedPath: string | null
+  isDragOver: boolean
   onNavigate: (path: string) => void
   onSelect: (entry: FileEntry | null) => void
   onRefresh: () => void
+  onDragStart: (entry: FileEntry, e: React.DragEvent<HTMLDivElement>) => void
+  onDragOver: (e: React.DragEvent<HTMLDivElement>) => void
+  onDragEnter: (e: React.DragEvent<HTMLDivElement>) => void
+  onDragLeave: (e: React.DragEvent<HTMLDivElement>) => void
+  onDrop: (e: React.DragEvent<HTMLDivElement>) => void
 }
 
 export function FilePane({
@@ -24,9 +30,15 @@ export function FilePane({
   isLoading,
   error,
   selectedPath,
+  isDragOver,
   onNavigate,
   onSelect,
   onRefresh,
+  onDragStart,
+  onDragOver,
+  onDragEnter,
+  onDragLeave,
+  onDrop,
 }: FilePaneProps) {
   const accentColor = side === 'local' ? '#7dd3fc' : '#a8e8ff'
   const sideLabel = side === 'local' ? 'LOCAL' : 'REMOTE'
@@ -54,7 +66,11 @@ export function FilePane({
   return (
     <div
       className="flex flex-col h-full"
-      style={{ background: '#0f1115', borderLeft: side === 'remote' ? '1px solid #1d2126' : 'none' }}
+      style={{ background: '#0f1115', borderLeft: side === 'remote' ? '1px solid #1d2126' : 'none', position: 'relative' }}
+      onDragOver={onDragOver}
+      onDragEnter={onDragEnter}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
     >
       {/* ── Header ────────────────────────────────────────────────────── */}
       <div
@@ -193,9 +209,39 @@ export function FilePane({
             selectedPath={selectedPath}
             onNavigate={onNavigate}
             onSelect={handleSelect}
+            onDragStart={onDragStart}
           />
         )}
       </div>
+
+      {/* ── Drop overlay ──────────────────────────────────────────────── */}
+      {isDragOver && (
+        <div
+          className="flex flex-col items-center justify-center gap-2"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'rgba(15,17,21,0.82)',
+            border: `2px dashed ${accentColor}`,
+            borderRadius: 2,
+            zIndex: 10,
+            pointerEvents: 'none',
+          }}
+        >
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={accentColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            {side === 'remote' ? (
+              // Upload arrow ↑
+              <><polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" /></>
+            ) : (
+              // Download arrow ↓
+              <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></>
+            )}
+          </svg>
+          <span style={{ color: accentColor, fontSize: '0.7rem', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.1em' }}>
+            {side === 'remote' ? 'DROP TO UPLOAD' : 'DROP TO DOWNLOAD'}
+          </span>
+        </div>
+      )}
 
       {/* ── Footer: item count + selected info ────────────────────────── */}
       <div

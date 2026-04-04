@@ -7,6 +7,7 @@ interface FileTreeProps {
   selectedPath: string | null
   onNavigate: (path: string) => void
   onSelect: (entry: FileEntry) => void
+  onDragStart?: (entry: FileEntry, e: React.DragEvent<HTMLDivElement>) => void
 }
 
 function formatSize(bytes: number): string {
@@ -16,7 +17,7 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
 }
 
-export function FileTree({ entries, currentPath, selectedPath, onNavigate, onSelect }: FileTreeProps) {
+export function FileTree({ entries, currentPath, selectedPath, onNavigate, onSelect, onDragStart }: FileTreeProps) {
   const handleClick = (entry: FileEntry) => {
     if (entry.type === 'directory') {
       onNavigate(entry.path)
@@ -58,6 +59,13 @@ export function FileTree({ entries, currentPath, selectedPath, onNavigate, onSel
               fontFamily: "'JetBrains Mono', monospace",
             }}
             onClick={() => handleClick(entry)}
+            draggable={!isDir}
+            onDragStart={(e) => {
+              if (isDir) { e.preventDefault(); return }
+              e.dataTransfer.effectAllowed = 'copy'
+              e.dataTransfer.setData('text/plain', entry.path)
+              onDragStart?.(entry, e)
+            }}
             role="button"
             tabIndex={0}
           >
