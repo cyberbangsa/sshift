@@ -37,7 +37,7 @@ export function ActiveSession({ sessionId, onClosed }: ActiveSessionProps) {
   const { sessions } = useSessionStore()
   const { hosts }    = useHostStore()
   const [activeTab, setActiveTab] = useState<ContentTab>('terminal')
-  const { setActiveTerminalHandle } = useTerminalStore()
+  const setActiveTerminalHandle = useTerminalStore((s) => s.setActiveTerminalHandle)
 
   // Callback ref: registers the terminal handle in the global store when the pane mounts
   const handleTerminalRef = useCallback((handle: TerminalPaneHandle | null) => {
