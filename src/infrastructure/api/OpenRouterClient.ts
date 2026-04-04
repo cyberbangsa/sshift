@@ -28,7 +28,7 @@ export class OpenRouterClient implements IAIClient {
     this.config = config
   }
 
-  async sendMessage(history: AIMessage[], userMessage: string): Promise<string> {
+  async sendMessage(history: AIMessage[], userMessage: string, signal?: AbortSignal): Promise<string> {
     const messages: OpenRouterMessage[] = [
       { role: 'system', content: this.config.systemPrompt },
       ...history.map((msg) => ({
@@ -40,6 +40,7 @@ export class OpenRouterClient implements IAIClient {
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
+      signal,
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${this.config.apiKey}`,

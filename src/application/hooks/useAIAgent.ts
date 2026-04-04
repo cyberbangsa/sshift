@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import { useAIStore, useSettingsStore } from '@/application/stores'
 import type { AIMessage } from '@/domain/entities'
 import { SendAIMessage } from '@/domain/usecases'
@@ -58,6 +58,12 @@ export function useAIAgent(
 ) {
   const { messages, isStreaming, error, addMessage, setStreaming, setError, clearMessages, executionMode, setExecutionMode } = useAIStore()
   const { settings, openRouterApiKey } = useSettingsStore()
+  const abortRef = useRef<AbortController | null>(null)
+
+  const abort = useCallback(() => {
+    abortRef.current?.abort()
+    abortRef.current = null
+  }, [])
 
   const aiClient = useMemo(() => {
     if (!openRouterApiKey) return null
@@ -76,6 +82,12 @@ export function useAIAgent(
         return
       }
 
+      // Cancel any in-flight request and start a fresh one
+      abortRef.current?.abort()
+      const controller = new AbortController()
+      abortRef.current = controller
+      const signal = controller.signal
+
       const userMessage: AIMessage = {
         id: crypto.randomUUID(),
         role: 'user',
@@ -90,7 +102,8 @@ export function useAIAgent(
         const useCase = new SendAIMessage(aiClient)
 
         // ── First AI response ────────────────────────────────────────────
-        const rawResponse = await useCase.execute(messages, content)
+        const rawResponse = await useCase.execute(messages, content, signal)
+        if (signal.aborted) return
         const { content: cleanedContent, command } = extractRunCommand(rawResponse.content)
         // Strip <readfile> tags from displayed content
         const displayContent = cleanedContent.replace(/<readfile>[\s\S]*?<\/readfile>/g, '').trim()
@@ -104,6 +117,7 @@ export function useAIAgent(
           let iteration = 0
 
           while (iteration < MAX_AGENT_ITERATIONS) {
+            if (signal.aborted) break
             iteration++
             const feedbackParts: string[] = []
 
@@ -111,6 +125,7 @@ export function useAIAgent(
             const filePaths = extractReadFilePaths(rawContent)
             if (filePaths.length > 0 && onReadFile) {
               for (const filePath of filePaths) {
+                if (signal.aborted) break
                 try {
                   const fileContent = await onReadFile(filePath)
                   const preview = fileContent.length > 40000
@@ -123,17 +138,20 @@ export function useAIAgent(
               }
             }
 
+            if (signal.aborted) break
+
             // Handle shell commands
             const { command: runCmd } = extractRunCommand(rawContent)
             const shellBlocks = runCmd ? [runCmd] : extractShellBlocks(rawContent)
             if (shellBlocks.length > 0 && onRunCommand) {
               for (const cmd of shellBlocks) {
+                if (signal.aborted) break
                 const out = await onRunCommand(cmd)
                 if (out) feedbackParts.push(`$ ${cmd}\n${out}`)
               }
             }
 
-            if (feedbackParts.length === 0) break
+            if (signal.aborted || feedbackParts.length === 0) break
 
             const feedbackContent =
               feedbackParts.join('\n\n') + '\n\n' +
@@ -150,7 +168,8 @@ export function useAIAgent(
             localMessages = [...localMessages, feedbackMsg]
 
             setStreaming(true)
-            const nextRaw = await useCase.execute(localMessages, feedbackContent)
+            const nextRaw = await useCase.execute(localMessages, feedbackContent, signal)
+            if (signal.aborted) break
             const { content: nextCleaned, command: nextCmd } = extractRunCommand(nextRaw.content)
             const nextDisplay = nextCleaned.replace(/<readfile>[\s\S]*?<\/readfile>/g, '').trim()
             const nextMsg: AIMessage = { ...nextRaw, content: nextDisplay, commandExecuted: nextCmd }
@@ -165,8 +184,10 @@ export function useAIAgent(
           }
         }
       } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return // user cancelled
         setError(err instanceof Error ? err.message : 'AI request failed')
       } finally {
+        if (!signal.aborted) abortRef.current = null
         setStreaming(false)
       }
     },
@@ -178,6 +199,7 @@ export function useAIAgent(
     isStreaming,
     error,
     sendMessage,
+    abort,
     clearMessages,
     hasApiKey: openRouterApiKey !== null,
     executionMode,

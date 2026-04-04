@@ -65,7 +65,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     }
   }, [activeSessionId])
 
-  const { messages, isStreaming, error, sendMessage, clearMessages, executionMode, setExecutionMode } = useAIAgent(agentRunCommand, agentReadFile)
+  const { messages, isStreaming, error, sendMessage, abort, clearMessages, executionMode, setExecutionMode } = useAIAgent(agentRunCommand, agentReadFile)
   const { loadApiKey, isApiKeyLoaded } = useSettingsStore()
   const { hosts, saveHost, deleteHost, selectHost } = useHost(hostRepository)
   const { connectHost, disconnectSession } = useSession(sessionRepository)
@@ -353,6 +353,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               isStreaming={isStreaming}
               error={error}
               onSendMessage={sendMessage}
+              onAbort={abort}
               onClearChat={clearMessages}
               onRunCommand={onRunCommand}
               executionMode={executionMode}
@@ -545,6 +546,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 isStreaming={isStreaming}
                 error={error}
                 onSendMessage={sendMessage}
+                onAbort={abort}
                 onClearChat={clearMessages}
                 onRunCommand={onRunCommand}
                 executionMode={executionMode}

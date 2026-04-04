@@ -10,6 +10,7 @@ interface AIPanelProps {
   error: string | null
   onSendMessage: (message: string) => void
   onClearChat: () => void
+  onAbort?: () => void
   onRunCommand?: (cmd: string) => void
   executionMode?: ExecutionMode
   onSetExecutionMode?: (mode: ExecutionMode) => void
@@ -21,6 +22,7 @@ export function AIPanel({
   error,
   onSendMessage,
   onClearChat,
+  onAbort,
   onRunCommand,
   executionMode = 'manual',
   onSetExecutionMode,
@@ -33,6 +35,10 @@ export function AIPanel({
     if (!trimmed || isStreaming) return
     onSendMessage(trimmed)
     setInput('')
+  }
+
+  const handleStop = () => {
+    onAbort?.()
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -149,22 +155,37 @@ export function AIPanel({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask AI about this session…"
+            placeholder={isStreaming ? 'AI is thinking…' : 'Ask AI about this session…'}
+            disabled={isStreaming}
             className="flex-1 bg-transparent outline-none text-text-primary placeholder:text-text-muted"
             style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.6875rem' }}
           />
-          <button
-            onClick={handleSend}
-            disabled={!input.trim() || isStreaming}
-            className="shrink-0 p-1 rounded transition-opacity"
-            style={{ opacity: !input.trim() || isStreaming ? 0.3 : 1 }}
-            aria-label="Send message"
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a8e8ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="22" y1="2" x2="11" y2="13" />
-              <polygon points="22 2 15 22 11 13 2 9 22 2" />
-            </svg>
-          </button>
+          {isStreaming ? (
+            <button
+              onClick={handleStop}
+              className="shrink-0 p-1 rounded transition-all"
+              style={{ color: '#ef4444' }}
+              aria-label="Stop AI"
+              title="Stop"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="#ef4444" stroke="none">
+                <rect x="4" y="4" width="16" height="16" rx="2" />
+              </svg>
+            </button>
+          ) : (
+            <button
+              onClick={handleSend}
+              disabled={!input.trim()}
+              className="shrink-0 p-1 rounded transition-opacity"
+              style={{ opacity: !input.trim() ? 0.3 : 1 }}
+              aria-label="Send message"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a8e8ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
     </div>
