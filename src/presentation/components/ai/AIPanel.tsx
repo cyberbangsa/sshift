@@ -67,7 +67,7 @@ export function AIPanel({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          {/* Status dot */
+          {/* Status dot */}
           <span className="w-2 h-2 rounded-full" style={{ background: '#22c55e' }} />
           {/* Clear button */}
           <button
