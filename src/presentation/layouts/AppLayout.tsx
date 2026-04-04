@@ -281,96 +281,136 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   /* ── DASHBOARD MODE ──────────────────────────────────────────── */
   return (
-    <div className="flex h-screen w-screen overflow-hidden" style={{ background: '#0c0e11' }}>
-      {/* Sidebar */}
-      <aside
-        className="w-[200px] shrink-0 flex flex-col"
-        style={{ background: '#111317', borderRight: '1px solid #1d2126' }}
+    <div className="flex flex-col h-screen w-screen overflow-hidden" style={{ background: '#0c0e11' }}>
+      {/* ── Global top bar (same as session mode) ──────────────── */}
+      <div
+        className="flex items-center h-[44px] shrink-0 gap-3 px-4"
+        style={{ background: '#111317', borderBottom: '1px solid #1d2126' }}
       >
-        {/* Branding + settings */}
+        {/* Logo */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span
+            className="font-mono text-[0.6rem] font-bold px-1 py-0.5 rounded"
+            style={{ background: 'linear-gradient(135deg, #a8e8ff, #00d4ff)', color: '#0c0e11' }}
+          >
+            &gt;_
+          </span>
+          <span
+            className="text-sm font-bold tracking-tight"
+            style={{ fontFamily: "'Space Grotesk', sans-serif", color: '#e2e2e6' }}
+          >
+            {APP_NAME}
+          </span>
+        </div>
+
+        {/* Jump to command */}
         <div
-          className="flex items-center justify-between px-3 py-2.5"
-          style={{ borderBottom: '1px solid #1d2126' }}
+          className="flex-1 max-w-xs flex items-center gap-2 px-3 py-1.5 rounded"
+          style={{ background: '#161a1e', border: '1px solid #1d2126' }}
         >
-          <div className="flex items-center gap-1.5">
-            <span
-              className="font-mono text-[0.65rem] font-bold px-1 py-0.5 rounded"
-              style={{ background: 'linear-gradient(135deg, #a8e8ff, #00d4ff)', color: '#0c0e11', letterSpacing: '0.02em' }}
-            >
-              &gt;_
-            </span>
-            <span
-              className="text-sm font-bold tracking-tight"
-              style={{ fontFamily: "'Space Grotesk', sans-serif", color: '#e2e2e6' }}
-            >
-              {APP_NAME}
-            </span>
-          </div>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#56687a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <span className="text-[0.6875rem]" style={{ fontFamily: "'Inter', sans-serif", color: '#56687a' }}>
+            Jump to command…
+          </span>
+        </div>
+
+        {/* Dashboard tab (always active here) */}
+        <div className="flex items-center flex-1 overflow-x-auto" style={{ marginLeft: '12px' }}>
           <button
-            className="p-1 rounded hover:bg-white/5 transition-colors"
+            className="flex items-center gap-1.5 px-3 h-[44px] text-[0.6875rem] font-medium shrink-0"
+            style={{
+              color: '#a8e8ff',
+              borderBottom: '2px solid #a8e8ff',
+              fontFamily: "'Inter', sans-serif",
+              letterSpacing: '0.04em',
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+            Dashboard
+          </button>
+        </div>
+
+        {/* Settings */}
+        <div className="flex items-center gap-1.5 shrink-0" style={{ marginLeft: '16px' }}>
+          <button
+            className="p-1.5 rounded hover:bg-white/5 transition-colors"
             aria-label="Settings"
             onClick={() => openSettings()}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a9bb0" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8a9bb0" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="3" />
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
             </svg>
           </button>
         </div>
+      </div>
 
-        {/* Nav items */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="px-2 pt-3 pb-2 flex flex-col gap-0.5">
-            {NAV_ITEMS.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveNav(item.id)}
-                className="flex items-center gap-2.5 px-2 py-1.5 rounded text-left w-full transition-colors"
-                style={{
-                  color: activeNav === item.id ? '#a8e8ff' : '#8a9bb0',
-                  background: activeNav === item.id ? 'rgba(168,232,255,0.08)' : 'transparent',
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '0.6875rem',
-                  fontWeight: 500,
-                  letterSpacing: '0.08em',
-                }}
-              >
-                <NavIcon name={item.icon} active={activeNav === item.id} />
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* + New Host */}
-        <div className="px-2 py-2" style={{ borderTop: '1px solid #1d2126' }}>
-          <button
-            onClick={() => setIsAddHostOpen(true)}
-            className="w-full flex items-center justify-center gap-2 py-2 rounded font-semibold text-[0.6875rem] transition-opacity hover:opacity-90"
-            style={{ background: 'linear-gradient(135deg, #a8e8ff, #00d4ff)', color: '#0c0e11', borderRadius: '4px', letterSpacing: '0.05em' }}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            New Host
-          </button>
-        </div>
-
-        {/* Status bar */}
-        <div
-          className="flex items-center gap-2 px-2 py-1.5 overflow-x-auto"
-          style={{ background: '#0c0e11', borderTop: '1px solid #1d2126', minHeight: 28 }}
+      {/* ── Body ───────────────────────────────────────────────── */}
+      <div className="flex flex-1 min-h-0">
+        {/* Sidebar */}
+        <aside
+          className="w-[200px] shrink-0 flex flex-col"
+          style={{ background: '#111317', borderRight: '1px solid #1d2126' }}
         >
-          <StatusChip><span style={{ color: '#22c55e' }}>●</span>&nbsp;OPTIMAL</StatusChip>
-          <StatusDivider />
-          <StatusChip>HOSTS: {hosts.length}</StatusChip>
-          <StatusDivider />
-          <StatusChip style={{ color: '#a8e8ff' }}>IDLE</StatusChip>
-        </div>
-      </aside>
+          {/* Nav items */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="px-2 pt-3 pb-2 flex flex-col gap-0.5">
+              {NAV_ITEMS.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveNav(item.id)}
+                  className="flex items-center gap-2.5 px-2 py-1.5 rounded text-left w-full transition-colors"
+                  style={{
+                    color: activeNav === item.id ? '#a8e8ff' : '#8a9bb0',
+                    background: activeNav === item.id ? 'rgba(168,232,255,0.08)' : 'transparent',
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '0.6875rem',
+                    fontWeight: 500,
+                    letterSpacing: '0.08em',
+                  }}
+                >
+                  <NavIcon name={item.icon} active={activeNav === item.id} />
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-      {/* Main content */}
-      <div className="flex-1 min-w-0" style={{ background: '#111317' }}>{children}</div>
+          {/* + New Host */}
+          <div className="px-2 py-2" style={{ borderTop: '1px solid #1d2126' }}>
+            <button
+              onClick={() => setIsAddHostOpen(true)}
+              className="w-full flex items-center justify-center gap-2 py-2 rounded font-semibold text-[0.6875rem] transition-opacity hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg, #a8e8ff, #00d4ff)', color: '#0c0e11', borderRadius: '4px', letterSpacing: '0.05em' }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              New Host
+            </button>
+          </div>
+
+          {/* Status bar */}
+          <div
+            className="flex items-center gap-2 px-2 py-1.5 overflow-x-auto"
+            style={{ background: '#0c0e11', borderTop: '1px solid #1d2126', minHeight: 28 }}
+          >
+            <StatusChip><span style={{ color: '#22c55e' }}>●</span>&nbsp;OPTIMAL</StatusChip>
+            <StatusDivider />
+            <StatusChip>HOSTS: {hosts.length}</StatusChip>
+            <StatusDivider />
+            <StatusChip style={{ color: '#a8e8ff' }}>IDLE</StatusChip>
+          </div>
+        </aside>
+
+        {/* Main content */}
+        <div className="flex-1 min-w-0" style={{ background: '#111317' }}>{children}</div>
+      </div>
 
       <AddHostModal
         isOpen={isAddHostOpen}
