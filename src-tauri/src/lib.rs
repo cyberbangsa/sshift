@@ -49,6 +49,7 @@ pub fn run() {
             get_api_key,
             set_api_key,
             delete_api_key,
+            read_remote_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

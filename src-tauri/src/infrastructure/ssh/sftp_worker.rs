@@ -60,6 +60,12 @@ pub enum SftpCommand {
         path: String,
         reply: SyncSender<Result<(), String>>,
     },
+    /// Read up to `max_bytes` of a remote file and return it as a UTF-8 string.
+    ReadFile {
+        path: String,
+        max_bytes: usize,
+        reply: SyncSender<Result<String, String>>,
+    },
     Disconnect,
 }
 
@@ -184,6 +190,19 @@ fn sftp_thread(
                 let r = sftp
                     .mkdir(Path::new(&path), 0o755)
                     .map_err(|e| e.to_string());
+                let _ = reply.send(r);
+            }
+
+            Ok(SftpCommand::ReadFile { path, max_bytes, reply }) => {
+                let r = (|| {
+                    let mut file = sftp
+                        .open(Path::new(&path))
+                        .map_err(|e| format!("Cannot open '{}': {}", path, e))?;
+                    let mut buf = vec![0u8; max_bytes];
+                    let n = file.read(&mut buf).map_err(|e| e.to_string())?;
+                    buf.truncate(n);
+                    Ok(String::from_utf8_lossy(&buf).into_owned())
+                })();
                 let _ = reply.send(r);
             }
         }

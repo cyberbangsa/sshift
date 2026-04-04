@@ -1,5 +1,6 @@
 import type { ReactNode, CSSProperties } from 'react'
 import { useState, useCallback, useRef, useEffect } from 'react'
+import { invoke } from '@tauri-apps/api/core'
 import { useHostStore, useSessionStore, useUIStore, useSettingsStore, useTerminalStore } from '@/application/stores'
 import { useHost, useSession, useAIAgent } from '@/application/hooks'
 import { hostRepository, sessionRepository } from '@/infrastructure/repositories'
@@ -54,7 +55,17 @@ export function AppLayout({ children }: AppLayoutProps) {
     return activeTerminalHandle.captureOutput(8000)
   }, [activeTerminalHandle])
 
-  const { messages, isStreaming, error, sendMessage, clearMessages, executionMode, setExecutionMode } = useAIAgent(agentRunCommand)
+  // For the agentic loop — reads a remote file via SFTP
+  const agentReadFile = useCallback(async (filePath: string): Promise<string> => {
+    if (!activeSessionId) return ''
+    try {
+      return await invoke<string>('read_remote_file', { sessionId: activeSessionId, path: filePath })
+    } catch (e) {
+      return `Error reading file: ${e}`
+    }
+  }, [activeSessionId])
+
+  const { messages, isStreaming, error, sendMessage, clearMessages, executionMode, setExecutionMode } = useAIAgent(agentRunCommand, agentReadFile)
   const { loadApiKey, isApiKeyLoaded } = useSettingsStore()
   const { hosts, saveHost, deleteHost, selectHost } = useHost(hostRepository)
   const { connectHost, disconnectSession } = useSession(sessionRepository)

@@ -5,6 +5,7 @@ import { SendAIMessage } from '@/domain/usecases'
 import { OpenRouterClient } from '@/infrastructure/api'
 
 const RUN_TAG_RE = /<run>([\s\S]*?)<\/run>/g
+const READFILE_TAG_RE = /<readfile>([\s\S]*?)<\/readfile>/g
 const FENCE_RE = /```(\w*)\n?([\s\S]*?)```/g
 const SHELL_LANGS = new Set(['bash', 'sh', 'shell', 'zsh', 'fish', 'console', ''])
 const MAX_AGENT_ITERATIONS = 5
@@ -34,11 +35,27 @@ function extractShellBlocks(content: string): string[] {
   return blocks
 }
 
+/** Extracts all <readfile>...</readfile> paths from a response. */
+function extractReadFilePaths(content: string): string[] {
+  const paths: string[] = []
+  READFILE_TAG_RE.lastIndex = 0
+  let match: RegExpExecArray | null
+  while ((match = READFILE_TAG_RE.exec(content)) !== null) {
+    const p = match[1].trim()
+    if (p) paths.push(p)
+  }
+  return paths
+}
+
 /**
  * onRunCommand: runs a shell command and returns its terminal output.
- * Passing this lets the agent see results and continue autonomously.
+ * onReadFile: reads a remote file via SFTP and returns its content.
+ * Passing these lets the agent see results and continue autonomously.
  */
-export function useAIAgent(onRunCommand?: (cmd: string) => Promise<string>) {
+export function useAIAgent(
+  onRunCommand?: (cmd: string) => Promise<string>,
+  onReadFile?: (path: string) => Promise<string>,
+) {
   const { messages, isStreaming, error, addMessage, setStreaming, setError, clearMessages, executionMode, setExecutionMode } = useAIStore()
   const { settings, openRouterApiKey } = useSettingsStore()
 
@@ -75,34 +92,53 @@ export function useAIAgent(onRunCommand?: (cmd: string) => Promise<string>) {
         // ── First AI response ────────────────────────────────────────────
         const rawResponse = await useCase.execute(messages, content)
         const { content: cleanedContent, command } = extractRunCommand(rawResponse.content)
-        const firstMsg: AIMessage = { ...rawResponse, content: cleanedContent, commandExecuted: command }
+        // Strip <readfile> tags from displayed content
+        const displayContent = cleanedContent.replace(/<readfile>[\s\S]*?<\/readfile>/g, '').trim()
+        const firstMsg: AIMessage = { ...rawResponse, content: displayContent, commandExecuted: command }
         addMessage(firstMsg)
 
         // ── Auto-mode agentic loop ────────────────────────────────────────
-        if (executionMode === 'auto' && onRunCommand) {
+        if (executionMode === 'auto' && (onRunCommand || onReadFile)) {
           let localMessages: AIMessage[] = [...messages, userMessage, firstMsg]
-          let nextCommands = command ? [command] : extractShellBlocks(rawResponse.content)
+          let rawContent = rawResponse.content
           let iteration = 0
 
-          while (nextCommands.length > 0 && iteration < MAX_AGENT_ITERATIONS) {
+          while (iteration < MAX_AGENT_ITERATIONS) {
             iteration++
+            const feedbackParts: string[] = []
 
-            // Run each command and collect its output
-            const outputParts: string[] = []
-            for (const cmd of nextCommands) {
-              const out = await onRunCommand(cmd)
-              if (out) outputParts.push(`$ ${cmd}\n${out}`)
+            // Handle <readfile> tags first
+            const filePaths = extractReadFilePaths(rawContent)
+            if (filePaths.length > 0 && onReadFile) {
+              for (const filePath of filePaths) {
+                try {
+                  const fileContent = await onReadFile(filePath)
+                  const preview = fileContent.length > 40000
+                    ? fileContent.slice(0, 40000) + '\n...[truncated]'
+                    : fileContent
+                  feedbackParts.push(`File contents of ${filePath}:\n\`\`\`\n${preview}\n\`\`\``)
+                } catch (e) {
+                  feedbackParts.push(`Could not read ${filePath}: ${e}`)
+                }
+              }
             }
 
-            if (outputParts.length === 0) break
+            // Handle shell commands
+            const { command: runCmd } = extractRunCommand(rawContent)
+            const shellBlocks = runCmd ? [runCmd] : extractShellBlocks(rawContent)
+            if (shellBlocks.length > 0 && onRunCommand) {
+              for (const cmd of shellBlocks) {
+                const out = await onRunCommand(cmd)
+                if (out) feedbackParts.push(`$ ${cmd}\n${out}`)
+              }
+            }
 
-            // Feed output back to the AI
-            const outputText = outputParts.join('\n\n')
+            if (feedbackParts.length === 0) break
+
             const feedbackContent =
-              `Command output:\n\`\`\`\n${outputText}\n\`\`\`\n\n` +
-              `Analyse the output. If the task is complete, summarise the result. ` +
-              `If you need to run further commands to complete the task, include them ` +
-              `(wrapped in <run>...</run> or as a fenced shell block).`
+              feedbackParts.join('\n\n') + '\n\n' +
+              'Analyse the above. If the task is complete, summarise the result. ' +
+              'If further commands or file reads are needed, issue them now.'
 
             const feedbackMsg: AIMessage = {
               id: crypto.randomUUID(),
@@ -116,12 +152,16 @@ export function useAIAgent(onRunCommand?: (cmd: string) => Promise<string>) {
             setStreaming(true)
             const nextRaw = await useCase.execute(localMessages, feedbackContent)
             const { content: nextCleaned, command: nextCmd } = extractRunCommand(nextRaw.content)
-            const nextMsg: AIMessage = { ...nextRaw, content: nextCleaned, commandExecuted: nextCmd }
+            const nextDisplay = nextCleaned.replace(/<readfile>[\s\S]*?<\/readfile>/g, '').trim()
+            const nextMsg: AIMessage = { ...nextRaw, content: nextDisplay, commandExecuted: nextCmd }
             addMessage(nextMsg)
             localMessages = [...localMessages, nextMsg]
+            rawContent = nextRaw.content
 
-            // Decide whether to continue the loop
-            nextCommands = nextCmd ? [nextCmd] : extractShellBlocks(nextRaw.content)
+            // Stop if no more actions are requested
+            const moreFiles = extractReadFilePaths(rawContent)
+            const moreCommands = nextCmd ? [nextCmd] : extractShellBlocks(rawContent)
+            if (moreFiles.length === 0 && moreCommands.length === 0) break
           }
         }
       } catch (err) {
@@ -130,7 +170,7 @@ export function useAIAgent(onRunCommand?: (cmd: string) => Promise<string>) {
         setStreaming(false)
       }
     },
-    [aiClient, messages, addMessage, setStreaming, setError, executionMode, onRunCommand],
+    [aiClient, messages, addMessage, setStreaming, setError, executionMode, onRunCommand, onReadFile],
   )
 
   return {

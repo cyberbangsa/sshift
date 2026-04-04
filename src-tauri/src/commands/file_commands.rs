@@ -244,3 +244,37 @@ pub async fn list_directory(session_id: String, path: String) -> Result<Vec<File
         "Use list_remote_directory. (session={session_id}, path={path})"
     ))
 }
+
+/// Reads a remote file via SFTP and returns its content as a UTF-8 string.
+/// Content is capped at `max_bytes` (default 200 KB) to prevent huge payloads.
+#[tauri::command]
+pub async fn read_remote_file(
+    session_id: String,
+    path: String,
+    max_bytes: Option<usize>,
+    state: State<'_, SshManager>,
+    app: AppHandle,
+) -> Result<String, String> {
+    let limit = max_bytes.unwrap_or(200 * 1024);
+    let sftp_tx = state
+        .sftp_tx(&session_id, &app)
+        .map_err(|e| e.to_string())?;
+
+    let (reply_tx, reply_rx) = sync_channel::<Result<String, String>>(1);
+    sftp_tx
+        .send(SftpCommand::ReadFile {
+            path,
+            max_bytes: limit,
+            reply: reply_tx,
+        })
+        .map_err(|_| "SFTP worker disconnected".to_string())?;
+
+    tokio::task::spawn_blocking(move || {
+        reply_rx
+            .recv_timeout(std::time::Duration::from_secs(30))
+            .map_err(|_| "read_remote_file timed out".to_string())
+            .and_then(|r| r)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
