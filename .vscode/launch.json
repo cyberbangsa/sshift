@@ -1,0 +1,82 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch App (Tauri Dev)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/src-tauri/target/debug/sshift",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "tauri: dev",
+      "sourceLanguages": ["rust"],
+      "presentation": {
+        "group": "tauri",
+        "order": 1
+      }
+    },
+    {
+      "name": "Debug Rust Backend (attach)",
+      "type": "lldb",
+      "request": "attach",
+      "program": "${workspaceFolder}/src-tauri/target/debug/sshift",
+      "waitFor": true,
+      "sourceLanguages": ["rust"],
+      "presentation": {
+        "group": "tauri",
+        "order": 2
+      }
+    },
+    {
+      "name": "Debug Frontend (Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/src",
+      "preLaunchTask": "vite: dev server",
+      "sourceMapPathOverrides": {
+        "webpack:///./src/*": "${webRoot}/*"
+      },
+      "presentation": {
+        "group": "frontend",
+        "order": 1
+      }
+    },
+    {
+      "name": "Run Tests (Vitest)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "test"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "presentation": {
+        "group": "test",
+        "order": 1
+      }
+    },
+    {
+      "name": "Debug Tests (Vitest)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "test:watch"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "presentation": {
+        "group": "test",
+        "order": 2
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack Debug (Tauri + Frontend)",
+      "configurations": ["Launch App (Tauri Dev)", "Debug Frontend (Chrome)"],
+      "presentation": {
+        "group": "tauri",
+        "order": 3
+      }
+    }
+  ]
+}

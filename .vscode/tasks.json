@@ -1,0 +1,136 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "tauri: dev",
+      "type": "shell",
+      "command": "source ~/.cargo/env && npm run app",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "isBackground": true,
+      "problemMatcher": [
+        {
+          "pattern": [
+            {
+              "regexp": "^\\s*(error|warning)\\[(.*)\\]:(.*)$",
+              "severity": 1,
+              "code": 2,
+              "message": 3
+            },
+            {
+              "regexp": "^\\s*-->\\s*(.*):(\\d+):(\\d+)$",
+              "file": 1,
+              "line": 2,
+              "column": 3
+            }
+          ],
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": "^\\s*Compiling",
+            "endsPattern": "(Finished|error\\[)"
+          }
+        }
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "tauri"
+      }
+    },
+    {
+      "label": "vite: dev server",
+      "type": "shell",
+      "command": "npm run dev",
+      "isBackground": true,
+      "problemMatcher": [
+        {
+          "pattern": [
+            {
+              "regexp": ".",
+              "file": 1,
+              "location": 2,
+              "message": 3
+            }
+          ],
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": "VITE v",
+            "endsPattern": "Local:"
+          }
+        }
+      ],
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated",
+        "group": "tauri"
+      }
+    },
+    {
+      "label": "cargo: check",
+      "type": "shell",
+      "command": "source ~/.cargo/env && cargo check",
+      "options": {
+        "cwd": "${workspaceFolder}/src-tauri"
+      },
+      "group": "build",
+      "problemMatcher": ["$rustc"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "cargo: build debug",
+      "type": "shell",
+      "command": "source ~/.cargo/env && cargo build",
+      "options": {
+        "cwd": "${workspaceFolder}/src-tauri"
+      },
+      "group": "build",
+      "problemMatcher": ["$rustc"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "npm: build",
+      "type": "shell",
+      "command": "npm run build",
+      "group": "build",
+      "problemMatcher": ["$tsc"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "npm: test",
+      "type": "shell",
+      "command": "npm run test",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "npm: test watch",
+      "type": "shell",
+      "command": "npm run test:watch",
+      "group": "test",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    }
+  ]
+}
