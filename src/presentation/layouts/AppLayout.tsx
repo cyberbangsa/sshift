@@ -2,11 +2,12 @@ import type { ReactNode, CSSProperties } from 'react'
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { useHostStore, useSessionStore, useUIStore, useSettingsStore, useTerminalStore } from '@/application/stores'
-import { useHost, useSession, useAIAgent } from '@/application/hooks'
-import { hostRepository, sessionRepository } from '@/infrastructure/repositories'
+import { useHost, useSession, useAIAgent, useVault } from '@/application/hooks'
+import { hostRepository, sessionRepository, vaultRepository } from '@/infrastructure/repositories'
 import { AddHostModal } from '@/presentation/components/sidebar'
 import { AIPanel } from '@/presentation/components/ai'
 import { Button, Modal } from '@/presentation/shared'
+import { Vault } from '@/presentation/pages'
 import { APP_NAME } from '@/config'
 import type { Host, AIRule } from '@/domain/entities'
 
@@ -70,6 +71,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { loadApiKey, isApiKeyLoaded } = useSettingsStore()
   const { hosts, saveHost } = useHost(hostRepository)
   const { connectHost, disconnectSession } = useSession(sessionRepository)
+  const { loadVault } = useVault(vaultRepository)
 
   const handleUpdateHostRules = useCallback(
     (rules: AIRule[]) => {
@@ -97,7 +99,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         await connectHost(host)
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
-        const debug = `[${host.username}@${host.hostname}:${host.port} auth=${host.authMethod}${host.privateKeyPath ? ' key=' + host.privateKeyPath : ''}${host.password ? ' pw=***' : ''}]`
+        const debug = `[${host.username}@${host.hostname}:${host.port} auth=${host.authMethod}${host.vaultEntryId ? ' vault=' + host.vaultEntryId : ''}${host.password ? ' pw=***' : ''}]`
         setConnectError(`${msg}\n${debug}`)
         if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
         errorTimerRef.current = setTimeout(() => setConnectError(null), 10000)
@@ -125,6 +127,11 @@ export function AppLayout({ children }: AppLayoutProps) {
       loadApiKey()
     }
   }, [isApiKeyLoaded, loadApiKey])
+
+  // Pre-load vault entries so host form can list available keys
+  useEffect(() => {
+    loadVault()
+  }, [loadVault])
 
 
 
@@ -274,6 +281,59 @@ export function AppLayout({ children }: AppLayoutProps) {
                       </button>
                     ))}
                   </div>
+
+                  {/* Connections section */}
+                  <div className="px-2 pt-2 pb-1">
+                    <div className="flex items-center gap-1.5 px-2 py-1">
+                      <span
+                        className="text-[0.55rem] font-semibold tracking-[0.1em] uppercase"
+                        style={{ color: '#3c494e', fontFamily: "'Inter', sans-serif" }}
+                      >
+                        Connections
+                      </span>
+                      <div className="flex-1 h-px" style={{ background: '#1d2126' }} />
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      {hosts.map((host) => {
+                        const existingSession = Array.from(sessions.values()).find((s) => s.hostId === host.id)
+                        const isConnected = !!existingSession
+                        return (
+                          <button
+                            key={host.id}
+                            onClick={() => handleConnect(host)}
+                            className="flex items-center gap-2 px-2 py-1.5 rounded text-left w-full transition-colors hover:bg-white/5"
+                          >
+                            <span
+                              className="shrink-0"
+                              style={{ color: isConnected ? '#4ade80' : '#3c494e', fontSize: '0.5rem' }}
+                            >●</span>
+                            <div className="flex flex-col min-w-0">
+                              <span
+                                className="truncate text-[0.6875rem] font-medium leading-tight"
+                                style={{ fontFamily: "'Inter', sans-serif", color: '#c4cdd8' }}
+                              >
+                                {host.label}
+                              </span>
+                              <span
+                                className="truncate text-[0.5625rem] leading-tight"
+                                style={{ fontFamily: "'JetBrains Mono', monospace", color: '#56687a' }}
+                              >
+                                {host.username}@{host.hostname}
+                              </span>
+                            </div>
+                          </button>
+                        )
+                      })}
+                      {hosts.length === 0 && (
+                        <p
+                          className="px-2 py-1 text-[0.6rem]"
+                          style={{ color: '#3c494e', fontFamily: "'Inter', sans-serif" }}
+                        >
+                          No saved hosts yet
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <div className="px-2 py-2" style={{ borderTop: '1px solid #1d2126' }}>
                   <button
@@ -298,7 +358,9 @@ export function AppLayout({ children }: AppLayoutProps) {
                   <StatusChip style={{ color: '#a8e8ff' }}>IDLE</StatusChip>
                 </div>
               </aside>
-              <div className="flex-1 min-w-0" style={{ background: '#111317' }}>{children}</div>
+              <div className="flex-1 min-w-0" style={{ background: '#111317' }}>
+                {activeNav === 'vault' ? <Vault /> : children}
+              </div>
             </>
           ) : (
             /* Active session view: content + AI panel, no sidebar */
@@ -413,7 +475,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           className="w-[200px] shrink-0 flex flex-col"
           style={{ background: '#111317', borderRight: '1px solid #1d2126' }}
         >
-          {/* Nav items */}
+          {/* Nav items + Connections */}
           <div className="flex-1 overflow-y-auto">
             <div className="px-2 pt-3 pb-2 flex flex-col gap-0.5">
               {NAV_ITEMS.map((item) => (
@@ -434,6 +496,58 @@ export function AppLayout({ children }: AppLayoutProps) {
                   {item.label}
                 </button>
               ))}
+            </div>
+
+            {/* Connections section */}
+            <div className="px-2 pt-2 pb-1">
+              <div className="flex items-center gap-1.5 px-2 py-1">
+                <span
+                  className="text-[0.55rem] font-semibold tracking-[0.1em] uppercase"
+                  style={{ color: '#3c494e', fontFamily: "'Inter', sans-serif" }}
+                >
+                  Connections
+                </span>
+                <div className="flex-1 h-px" style={{ background: '#1d2126' }} />
+              </div>
+              <div className="flex flex-col gap-0.5">
+                {hosts.map((host) => {
+                  const isConnected = Array.from(sessions.values()).some((s) => s.hostId === host.id)
+                  return (
+                    <button
+                      key={host.id}
+                      onClick={() => handleConnect(host)}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded text-left w-full transition-colors hover:bg-white/5"
+                    >
+                      <span
+                        className="shrink-0"
+                        style={{ color: isConnected ? '#4ade80' : '#3c494e', fontSize: '0.5rem' }}
+                      >●</span>
+                      <div className="flex flex-col min-w-0">
+                        <span
+                          className="truncate text-[0.6875rem] font-medium leading-tight"
+                          style={{ fontFamily: "'Inter', sans-serif", color: '#c4cdd8' }}
+                        >
+                          {host.label}
+                        </span>
+                        <span
+                          className="truncate text-[0.5625rem] leading-tight"
+                          style={{ fontFamily: "'JetBrains Mono', monospace", color: '#56687a' }}
+                        >
+                          {host.username}@{host.hostname}
+                        </span>
+                      </div>
+                    </button>
+                  )
+                })}
+                {hosts.length === 0 && (
+                  <p
+                    className="px-2 py-1 text-[0.6rem]"
+                    style={{ color: '#3c494e', fontFamily: "'Inter', sans-serif" }}
+                  >
+                    No saved hosts yet
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -465,7 +579,9 @@ export function AppLayout({ children }: AppLayoutProps) {
         </aside>
 
         {/* Main content */}
-        <div className="flex-1 min-w-0" style={{ background: '#111317' }}>{children}</div>
+        <div className="flex-1 min-w-0" style={{ background: '#111317' }}>
+          {activeNav === 'vault' ? <Vault /> : children}
+        </div>
       </div>
 
       <AddHostModal

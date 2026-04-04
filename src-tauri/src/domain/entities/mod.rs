@@ -10,7 +10,14 @@ pub struct Host {
     pub port: u16,
     pub username: String,
     pub auth_method: AuthMethod,
+    /// Resolved file-system path used directly by the SSH layer.
+    /// Populated at connection time from `vault_entry_id`; never persisted.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub private_key_path: Option<String>,
+    /// Reference to a vault entry that holds the private key.
+    /// Persisted with the host; resolved to `private_key_path` before connecting.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vault_entry_id: Option<String>,
     pub tags: Vec<String>,
     pub created_at: DateTime<Utc>,
 }

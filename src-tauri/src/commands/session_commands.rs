@@ -1,8 +1,14 @@
+use crate::commands::vault_commands::vault_dir;
 use crate::domain::entities::{AuthMethod, Host, Session};
 use crate::infrastructure::ssh::SshManager;
 
 /// Connect to a host and open an interactive PTY shell.
 /// Output is streamed via Tauri events: `terminal-output:{sessionId}` and `terminal-closed:{sessionId}`.
+///
+/// When `vault_entry_id` is provided the backend resolves it to the absolute
+/// path of the stored key file and passes that to the SSH layer.  The raw
+/// `private_key_path` parameter is kept for backwards-compatibility but
+/// `vault_entry_id` takes precedence.
 #[tauri::command]
 pub async fn connect_session(
     state: tauri::State<'_, SshManager>,
@@ -12,9 +18,22 @@ pub async fn connect_session(
     port: u16,
     username: String,
     auth_method: AuthMethod,
+    vault_entry_id: Option<String>,
     private_key_path: Option<String>,
     password: Option<String>,
 ) -> Result<Session, String> {
+    // Resolve vault entry → absolute key file path (takes precedence over bare path).
+    let resolved_key_path: Option<String> = if let Some(ref vid) = vault_entry_id {
+        let dir = vault_dir(&app)?;
+        let path = dir.join(vid);
+        if !path.exists() {
+            return Err(format!("Vault entry not found: {vid}"));
+        }
+        Some(path.to_string_lossy().into_owned())
+    } else {
+        private_key_path
+    };
+
     let host = Host {
         id: host_id,
         label: String::new(),
@@ -22,7 +41,8 @@ pub async fn connect_session(
         port,
         username,
         auth_method,
-        private_key_path,
+        private_key_path: resolved_key_path,
+        vault_entry_id: None, // already resolved above
         tags: Vec::new(),
         created_at: chrono::Utc::now(),
     };

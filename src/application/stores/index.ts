@@ -18,3 +18,6 @@ export type { SettingsStore } from './settingsStore'
 
 export { useTerminalStore } from './terminalStore'
 export type { TerminalStore, TerminalHandle } from './terminalStore'
+
+export { useVaultStore } from './vaultStore'
+export type { VaultStore } from './vaultStore'
