@@ -67,33 +67,7 @@ export function AIPanel({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          {/* Mode toggle: Manual | Auto */}
-          <div
-            className="flex items-center rounded overflow-hidden text-[0.55rem] font-semibold"
-            style={{ border: '1px solid #252a30', fontFamily: "'Inter', sans-serif" }}
-          >
-            <button
-              onClick={() => onSetExecutionMode?.('manual')}
-              className="px-2 py-0.5 transition-colors"
-              style={{
-                background: !isAutoMode ? 'rgba(168,232,255,0.12)' : 'transparent',
-                color: !isAutoMode ? '#a8e8ff' : '#56687a',
-              }}
-            >
-              Manual
-            </button>
-            <button
-              onClick={() => onSetExecutionMode?.('auto')}
-              className="px-2 py-0.5 transition-colors"
-              style={{
-                background: isAutoMode ? 'rgba(251,191,36,0.12)' : 'transparent',
-                color: isAutoMode ? '#fbbf24' : '#56687a',
-              }}
-            >
-              Auto
-            </button>
-          </div>
-          {/* Status dot */}
+          {/* Status dot */
           <span className="w-2 h-2 rounded-full" style={{ background: '#22c55e' }} />
           {/* Clear button */}
           <button
@@ -146,6 +120,34 @@ export function AIPanel({
           className="flex items-center gap-2 px-3 py-2 rounded"
           style={{ background: '#161a1e', border: '1px solid #252a30' }}
         >
+          {/* Mode toggle */}
+          <div
+            className="flex items-center rounded overflow-hidden shrink-0 text-[0.55rem] font-semibold"
+            style={{ border: '1px solid #252a30', fontFamily: "'Inter', sans-serif" }}
+          >
+            <button
+              onClick={() => onSetExecutionMode?.('manual')}
+              className="px-2 py-0.5 transition-colors"
+              style={{
+                background: !isAutoMode ? 'rgba(168,232,255,0.12)' : 'transparent',
+                color: !isAutoMode ? '#a8e8ff' : '#56687a',
+              }}
+            >
+              Manual
+            </button>
+            <button
+              onClick={() => onSetExecutionMode?.('auto')}
+              className="px-2 py-0.5 transition-colors"
+              style={{
+                background: isAutoMode ? 'rgba(251,191,36,0.12)' : 'transparent',
+                color: isAutoMode ? '#fbbf24' : '#56687a',
+              }}
+            >
+              Auto
+            </button>
+          </div>
+          {/* divider */}
+          <span className="w-px shrink-0 self-stretch" style={{ background: '#252a30' }} />
           <input
             type="text"
             value={input}
