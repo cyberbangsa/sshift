@@ -246,28 +246,84 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         {/* ── Body ───────────────────────────────────────────── */}
         <div className="flex flex-1 min-h-0">
-          {/* Main content */}
-          <div className="flex-1 min-w-0 relative">{children}</div>
-
-          {/* AI Panel — always visible in session mode */}
-          <div
-            className="w-[280px] shrink-0 flex flex-col"
-            style={{ borderLeft: '1px solid #1d2126' }}
-          >
-            <AIPanel
-              messages={messages}
-              isStreaming={isStreaming}
-              error={error}
-              onSendMessage={sendMessage}
-              onAbort={abort}
-              onClearChat={clearMessages}
-              onRunCommand={onRunCommand}
-              executionMode={executionMode}
-              onSetExecutionMode={setExecutionMode}
-              hostRules={activeHostForRules?.aiRules ?? []}
-              onUpdateHostRules={handleUpdateHostRules}
-            />
-          </div>
+          {activeSessionId === null ? (
+            /* Dashboard view inside session mode: sidebar + content, no AI panel */
+            <>
+              <aside
+                className="w-[200px] shrink-0 flex flex-col"
+                style={{ background: '#111317', borderRight: '1px solid #1d2126' }}
+              >
+                <div className="flex-1 overflow-y-auto">
+                  <div className="px-2 pt-3 pb-2 flex flex-col gap-0.5">
+                    {NAV_ITEMS.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => setActiveNav(item.id)}
+                        className="flex items-center gap-2.5 px-2 py-1.5 rounded text-left w-full transition-colors"
+                        style={{
+                          color: activeNav === item.id ? '#a8e8ff' : '#8a9bb0',
+                          background: activeNav === item.id ? 'rgba(168,232,255,0.08)' : 'transparent',
+                          fontFamily: "'Inter', sans-serif",
+                          fontSize: '0.6875rem',
+                          fontWeight: 500,
+                          letterSpacing: '0.08em',
+                        }}
+                      >
+                        <NavIcon name={item.icon} active={activeNav === item.id} />
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="px-2 py-2" style={{ borderTop: '1px solid #1d2126' }}>
+                  <button
+                    onClick={() => setIsAddHostOpen(true)}
+                    className="w-full flex items-center justify-center gap-2 py-2 rounded font-semibold text-[0.6875rem] transition-opacity hover:opacity-90"
+                    style={{ background: 'linear-gradient(135deg, #a8e8ff, #00d4ff)', color: '#0c0e11', borderRadius: '4px', letterSpacing: '0.05em' }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    New Host
+                  </button>
+                </div>
+                <div
+                  className="flex items-center gap-2 px-2 py-1.5 overflow-x-auto"
+                  style={{ background: '#0c0e11', borderTop: '1px solid #1d2126', minHeight: 28 }}
+                >
+                  <StatusChip><span style={{ color: '#22c55e' }}>●</span>&nbsp;OPTIMAL</StatusChip>
+                  <StatusDivider />
+                  <StatusChip>HOSTS: {hosts.length}</StatusChip>
+                  <StatusDivider />
+                  <StatusChip style={{ color: '#a8e8ff' }}>IDLE</StatusChip>
+                </div>
+              </aside>
+              <div className="flex-1 min-w-0" style={{ background: '#111317' }}>{children}</div>
+            </>
+          ) : (
+            /* Active session view: content + AI panel, no sidebar */
+            <>
+              <div className="flex-1 min-w-0 relative">{children}</div>
+              <div
+                className="w-[280px] shrink-0 flex flex-col"
+                style={{ borderLeft: '1px solid #1d2126' }}
+              >
+                <AIPanel
+                  messages={messages}
+                  isStreaming={isStreaming}
+                  error={error}
+                  onSendMessage={sendMessage}
+                  onAbort={abort}
+                  onClearChat={clearMessages}
+                  onRunCommand={onRunCommand}
+                  executionMode={executionMode}
+                  onSetExecutionMode={setExecutionMode}
+                  hostRules={activeHostForRules?.aiRules ?? []}
+                  onUpdateHostRules={handleUpdateHostRules}
+                />
+              </div>
+            </>
+          )}
         </div>
 
         <AddHostModal
