@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import type { AIMessage } from '@/domain/entities'
+import type { AIMessage, AIRule } from '@/domain/entities'
 import type { ExecutionMode } from '@/application/stores'
 import { ChatThread } from './ChatThread'
+import { HostRulesPanel } from './HostRulesPanel'
 
 interface AIPanelProps {
   messages: AIMessage[]
@@ -13,6 +14,8 @@ interface AIPanelProps {
   onRunCommand?: (cmd: string) => void
   executionMode?: ExecutionMode
   onSetExecutionMode?: (mode: ExecutionMode) => void
+  hostRules?: AIRule[]
+  onUpdateHostRules?: (rules: AIRule[]) => void
 }
 
 export function AIPanel({
@@ -25,8 +28,11 @@ export function AIPanel({
   onRunCommand,
   executionMode = 'manual',
   onSetExecutionMode,
+  hostRules = [],
+  onUpdateHostRules,
 }: AIPanelProps) {
   const [input, setInput] = useState('')
+  const [rulesOpen, setRulesOpen] = useState(false)
   const isAutoMode = executionMode === 'auto'
 
   const handleSend = () => {
@@ -69,6 +75,31 @@ export function AIPanel({
         <div className="flex items-center gap-2">
           {/* Status dot */}
           <span className="w-2 h-2 rounded-full" style={{ background: '#22c55e' }} />
+          {/* Rules button */}
+          <button
+            onClick={() => setRulesOpen((v) => !v)}
+            className="relative p-1 rounded hover:bg-white/5 transition-colors"
+            aria-label="Host AI rules"
+            title="Host AI Rules"
+            style={{ color: rulesOpen ? '#a8e8ff' : '#56687a' }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="8" y1="6" x2="21" y2="6" />
+              <line x1="8" y1="12" x2="21" y2="12" />
+              <line x1="8" y1="18" x2="21" y2="18" />
+              <line x1="3" y1="6" x2="3.01" y2="6" />
+              <line x1="3" y1="12" x2="3.01" y2="12" />
+              <line x1="3" y1="18" x2="3.01" y2="18" />
+            </svg>
+            {hostRules.length > 0 && (
+              <span
+                className="absolute -top-0.5 -right-0.5 flex items-center justify-center rounded-full text-[0.45rem] font-bold"
+                style={{ background: '#a8e8ff', color: '#0c0e11', width: 12, height: 12, fontFamily: "'Inter', sans-serif" }}
+              >
+                {hostRules.length}
+              </span>
+            )}
+          </button>
           {/* Clear button */}
           <button
             onClick={onClearChat}
@@ -82,7 +113,36 @@ export function AIPanel({
           </button>
         </div>
       </div>
-
+      {/* ── Rules drawer ────────────────────────────────────── */}
+      {rulesOpen && (
+        <div
+          className="flex flex-col shrink-0 overflow-y-auto"
+          style={{ maxHeight: '55%', borderBottom: '1px solid #1d2126', background: '#0f1215' }}
+        >
+          <div
+            className="flex items-center justify-between px-3 py-2 shrink-0"
+            style={{ borderBottom: '1px solid #1d2126' }}
+          >
+            <span
+              className="text-[0.6rem] font-bold tracking-widest uppercase"
+              style={{ color: '#56687a', fontFamily: "'Inter', sans-serif" }}
+            >
+              Host AI Rules
+            </span>
+            <button
+              onClick={() => setRulesOpen(false)}
+              className="p-0.5 rounded hover:bg-white/5 transition-colors"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#56687a" strokeWidth="2" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+          <div className="px-3 py-2">
+            <HostRulesPanel rules={hostRules} onChange={(rules) => onUpdateHostRules?.(rules)} />
+          </div>
+        </div>
+      )}
       {/* ── Thread ──────────────────────────────────────────── */}
       <ChatThread
         messages={messages}

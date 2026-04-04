@@ -1,4 +1,4 @@
-export type { Host } from './Host'
+export type { Host, AIRule } from './Host'
 export type { Session } from './Session'
 export type { FileEntry } from './FileEntry'
 export type { Transfer } from './Transfer'

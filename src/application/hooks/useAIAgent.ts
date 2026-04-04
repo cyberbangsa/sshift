@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef } from 'react'
 import { useAIStore, useSettingsStore } from '@/application/stores'
-import type { AIMessage } from '@/domain/entities'
+import type { AIMessage, AIRule } from '@/domain/entities'
 import { SendAIMessage } from '@/domain/usecases'
 import { OpenRouterClient } from '@/infrastructure/api'
 
@@ -55,6 +55,7 @@ function extractReadFilePaths(content: string): string[] {
 export function useAIAgent(
   onRunCommand?: (cmd: string) => Promise<string>,
   onReadFile?: (path: string) => Promise<string>,
+  hostRules?: AIRule[],
 ) {
   const { messages, isStreaming, error, addMessage, setStreaming, setError, clearMessages, executionMode, setExecutionMode } = useAIStore()
   const { settings, openRouterApiKey } = useSettingsStore()
@@ -67,13 +68,18 @@ export function useAIAgent(
 
   const aiClient = useMemo(() => {
     if (!openRouterApiKey) return null
+    const rulesSection =
+      hostRules && hostRules.length > 0
+        ? '\n\nHOST-SPECIFIC RULES (always follow these for this server):\n' +
+          hostRules.map((r, i) => `Rule ${i + 1} — ${r.name}:\n${r.content}`).join('\n\n')
+        : ''
     return new OpenRouterClient({
       apiKey: openRouterApiKey,
       model: settings.aiModel,
       maxTokens: settings.aiMaxTokens,
-      systemPrompt: settings.aiSystemPrompt,
+      systemPrompt: settings.aiSystemPrompt + rulesSection,
     })
-  }, [openRouterApiKey, settings.aiModel, settings.aiMaxTokens, settings.aiSystemPrompt])
+  }, [openRouterApiKey, settings.aiModel, settings.aiMaxTokens, settings.aiSystemPrompt, hostRules])
 
   const sendMessage = useCallback(
     async (content: string) => {

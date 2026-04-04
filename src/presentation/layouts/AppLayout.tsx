@@ -1,5 +1,5 @@
 import type { ReactNode, CSSProperties } from 'react'
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { useHostStore, useSessionStore, useUIStore, useSettingsStore, useTerminalStore } from '@/application/stores'
 import { useHost, useSession, useAIAgent } from '@/application/hooks'
@@ -8,7 +8,7 @@ import { HostList, AddHostModal } from '@/presentation/components/sidebar'
 import { AIPanel } from '@/presentation/components/ai'
 import { Button, Icon, Modal } from '@/presentation/shared'
 import { APP_NAME } from '@/config'
-import type { Host } from '@/domain/entities'
+import type { Host, AIRule } from '@/domain/entities'
 
 interface AppLayoutProps {
   children: ReactNode
@@ -37,7 +37,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [showPendingPw, setShowPendingPw]       = useState(false)
 
   const { isAIPanelVisible, toggleAIPanel, openSettings } = useUIStore()
-  const { selectedHostId }                  = useHostStore()
+  const { selectedHostId, hosts: allHosts } = useHostStore()
   const { sessions, activeSessionId, setActiveSession } = useSessionStore()
   const { activeTerminalHandle } = useTerminalStore()
 
@@ -65,10 +65,22 @@ export function AppLayout({ children }: AppLayoutProps) {
     }
   }, [activeSessionId])
 
-  const { messages, isStreaming, error, sendMessage, abort, clearMessages, executionMode, setExecutionMode } = useAIAgent(agentRunCommand, agentReadFile)
+  const activeHostForRules = useMemo(() => {
+    const s = activeSessionId ? sessions.get(activeSessionId) : undefined
+    return s ? allHosts.find((h) => h.id === s.hostId) ?? null : null
+  }, [activeSessionId, sessions, allHosts])
+
+  const { messages, isStreaming, error, sendMessage, abort, clearMessages, executionMode, setExecutionMode } = useAIAgent(agentRunCommand, agentReadFile, activeHostForRules?.aiRules)
   const { loadApiKey, isApiKeyLoaded } = useSettingsStore()
   const { hosts, saveHost, deleteHost, selectHost } = useHost(hostRepository)
   const { connectHost, disconnectSession } = useSession(sessionRepository)
+
+  const handleUpdateHostRules = useCallback(
+    (rules: AIRule[]) => {
+      if (activeHostForRules) saveHost({ ...activeHostForRules, aiRules: rules })
+    },
+    [activeHostForRules, saveHost],
+  )
 
   const handleConnect = useCallback(
     async (host: Host) => {
@@ -358,6 +370,8 @@ export function AppLayout({ children }: AppLayoutProps) {
               onRunCommand={onRunCommand}
               executionMode={executionMode}
               onSetExecutionMode={setExecutionMode}
+              hostRules={activeHostForRules?.aiRules ?? []}
+              onUpdateHostRules={handleUpdateHostRules}
             />
           </div>
         </div>
@@ -551,6 +565,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                 onRunCommand={onRunCommand}
                 executionMode={executionMode}
                 onSetExecutionMode={setExecutionMode}
+                hostRules={activeHostForRules?.aiRules ?? []}
+                onUpdateHostRules={handleUpdateHostRules}
               />
             </div>
           )}
