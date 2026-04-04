@@ -1,4 +1,4 @@
-import type { ReactNode, CSSProperties } from 'react'
+import type { ReactNode } from 'react'
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { useHostStore, useSessionStore, useUIStore, useSettingsStore, useTerminalStore } from '@/application/stores'
@@ -6,7 +6,7 @@ import { useHost, useSession, useAIAgent } from '@/application/hooks'
 import { hostRepository, sessionRepository } from '@/infrastructure/repositories'
 import { AddHostModal } from '@/presentation/components/sidebar'
 import { AIPanel } from '@/presentation/components/ai'
-import { Button, Icon, Modal } from '@/presentation/shared'
+import { Button, Modal } from '@/presentation/shared'
 import { APP_NAME } from '@/config'
 import type { Host, AIRule } from '@/domain/entities'
 
@@ -15,13 +15,9 @@ interface AppLayoutProps {
 }
 
 /** Navigation items below CONNECTIONS (dashboard mode) */
-const NAV_ITEMS = [
-  { id: 'vault', label: 'VAULT', icon: 'lock' },
-] as const
 
 export function AppLayout({ children }: AppLayoutProps) {
   const [isAddHostOpen, setIsAddHostOpen] = useState(false)
-  const [activeNav, setActiveNav]         = useState<string | null>(null)
 
   // Connection state
   const [connectError, setConnectError]         = useState<string | null>(null)
@@ -32,7 +28,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [pendingPassword, setPendingPassword]   = useState('')
   const [showPendingPw, setShowPendingPw]       = useState(false)
 
-  const { isAIPanelVisible, toggleAIPanel, openSettings } = useUIStore()
+  const { openSettings } = useUIStore()
   const { hosts: allHosts } = useHostStore()
   const { sessions, activeSessionId, setActiveSession } = useSessionStore()
   const { activeTerminalHandle } = useTerminalStore()
@@ -281,139 +277,8 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   /* ── DASHBOARD MODE ──────────────────────────────────────────── */
   return (
-    <div className="flex h-screen w-screen overflow-hidden" style={{ background: '#0c0e11' }}>
-      {/* Sidebar */}
-      <aside
-        className="w-[200px] shrink-0 flex flex-col"
-        style={{ background: '#111317', borderRight: '1px solid #1d2126' }}
-      >
-        {/* Top bar: branding + icons */}
-        <div
-          className="flex items-center justify-between px-3 py-2.5"
-          style={{ borderBottom: '1px solid #1d2126' }}
-        >
-          <div className="flex items-center gap-1.5">
-            <span
-              className="font-mono text-[0.65rem] font-bold px-1 py-0.5 rounded"
-              style={{
-                background: 'linear-gradient(135deg, #a8e8ff, #00d4ff)',
-                color: '#0c0e11',
-                letterSpacing: '0.02em',
-              }}
-            >
-              &gt;_
-            </span>
-            <span
-              className="text-sm font-bold tracking-tight"
-              style={{ fontFamily: "'Space Grotesk', sans-serif", color: '#e2e2e6' }}
-            >
-              {APP_NAME}
-            </span>
-          </div>
-          <button
-            className="p-1 rounded hover:bg-white/5 transition-colors"
-            aria-label="Settings"
-            onClick={() => openSettings()}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a9bb0" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Nav items */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="px-2 pt-3 pb-2 flex flex-col gap-0.5">
-            {NAV_ITEMS.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveNav(item.id)}
-                className="flex items-center gap-2.5 px-2 py-1.5 rounded text-left w-full transition-colors"
-                style={{
-                  color: activeNav === item.id ? '#a8e8ff' : '#8a9bb0',
-                  background: activeNav === item.id ? 'rgba(168,232,255,0.08)' : 'transparent',
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '0.6875rem',
-                  fontWeight: 500,
-                  letterSpacing: '0.08em',
-                }}
-              >
-                <NavIcon name={item.icon} active={activeNav === item.id} />
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* + New Host */}
-        <div className="px-2 py-2" style={{ borderTop: '1px solid #1d2126' }}>
-          <button
-            onClick={() => setIsAddHostOpen(true)}
-            className="w-full flex items-center justify-center gap-2 py-2 rounded font-semibold text-[0.6875rem] transition-opacity hover:opacity-90"
-            style={{
-              background: 'linear-gradient(135deg, #a8e8ff, #00d4ff)',
-              color: '#0c0e11',
-              borderRadius: '4px',
-              letterSpacing: '0.05em',
-            }}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            New Host
-          </button>
-        </div>
-
-        {/* Status bar */}
-        <div
-          className="flex items-center gap-2 px-2 py-1.5 overflow-x-auto"
-          style={{ background: '#0c0e11', borderTop: '1px solid #1d2126', minHeight: 28 }}
-        >
-          <StatusChip><span style={{ color: '#22c55e' }}>●</span>&nbsp;OPTIMAL</StatusChip>
-          <StatusDivider />
-          <StatusChip>HOSTS: {hosts.length}</StatusChip>
-          <StatusDivider />
-          <StatusChip style={{ color: '#a8e8ff' }}>IDLE</StatusChip>
-        </div>
-      </aside>
-
-      {/* Main content */}
-      <div className="flex-1 min-w-0 flex flex-col" style={{ background: '#111317' }}>
-        <div
-          className="flex items-center justify-end px-3 py-1.5"
-          style={{ borderBottom: '1px solid #1d2126', background: '#111317' }}
-        >
-          <Button
-            variant={isAIPanelVisible ? 'primary' : 'ghost'}
-            size="sm"
-            onClick={toggleAIPanel}
-          >
-            <Icon name="ai" size={14} />
-            <span className="ml-1.5 text-[0.6875rem] font-semibold tracking-widest uppercase">AI</span>
-          </Button>
-        </div>
-        <div className="flex flex-1 min-h-0">
-          <div className="flex-1 min-w-0">{children}</div>
-          {isAIPanelVisible && (
-            <div className="w-[360px] shrink-0" style={{ borderLeft: '1px solid #1d2126' }}>
-              <AIPanel
-                messages={messages}
-                isStreaming={isStreaming}
-                error={error}
-                onSendMessage={sendMessage}
-                onAbort={abort}
-                onClearChat={clearMessages}
-                onRunCommand={onRunCommand}
-                executionMode={executionMode}
-                onSetExecutionMode={setExecutionMode}
-                hostRules={activeHostForRules?.aiRules ?? []}
-                onUpdateHostRules={handleUpdateHostRules}
-              />
-            </div>
-          )}
-        </div>
-      </div>
+    <div className="flex h-screen w-screen overflow-hidden" style={{ background: '#111317' }}>
+      <div className="flex-1 min-w-0">{children}</div>
 
       <AddHostModal
         isOpen={isAddHostOpen}
@@ -509,46 +374,6 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Spin keyframe for loading spinner */}
       <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
     </div>
-  )
-}
-
-/* ── Tiny presentational helpers ───────────────────────────────── */
-
-function StatusDivider() {
-  return <span style={{ color: '#252a30', fontSize: '0.75rem' }}>|</span>
-}
-
-function StatusChip({ children, style }: { children: ReactNode; style?: CSSProperties }) {
-  return (
-    <span
-      className="whitespace-nowrap text-[0.55rem] font-mono font-semibold tracking-[0.12em] uppercase"
-      style={{ color: '#56687a', ...style }}
-    >
-      {children}
-    </span>
-  )
-}
-
-function NavIcon({ name, active }: { name: string; active: boolean }) {
-  const stroke = active ? '#a8e8ff' : '#56687a'
-  if (name === 'folder') {
-    return (
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-      </svg>
-    )
-  }
-  if (name === 'key') {
-    return (
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-      </svg>
-    )
-  }
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
   )
 }
 
