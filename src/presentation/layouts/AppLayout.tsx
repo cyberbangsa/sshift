@@ -16,9 +16,7 @@ interface AppLayoutProps {
 
 /** Navigation items below CONNECTIONS (dashboard mode) */
 const NAV_ITEMS = [
-  { id: 'history', label: 'HISTORY', icon: 'folder' },
-  { id: 'keys',    label: 'KEYS',    icon: 'key'    },
-  { id: 'vault',   label: 'VAULT',   icon: 'lock'   },
+  { id: 'vault', label: 'VAULT', icon: 'lock' },
 ] as const
 
 export function AppLayout({ children }: AppLayoutProps) {
