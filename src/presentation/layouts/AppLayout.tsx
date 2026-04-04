@@ -130,8 +130,6 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   /* ── SESSION MODE (any open sessions, including dashboard tab) ── */
   if (sessions.size > 0) {
-    const activeSession = activeSessionId ? sessions.get(activeSessionId) : undefined
-    const activeHost    = activeSession ? hosts.find((h) => h.id === activeSession.hostId) : null
     const sessionHosts  = Array.from(sessions.values()).map((s) => ({
       session: s,
       host: hosts.find((h) => h.id === s.hostId),
@@ -254,87 +252,6 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         {/* ── Body ───────────────────────────────────────────── */}
         <div className="flex flex-1 min-h-0">
-          {/* Active connections sidebar */}
-          <aside
-            className="w-[160px] shrink-0 flex flex-col"
-            style={{ background: '#111317', borderRight: '1px solid #1d2126' }}
-          >
-            <div className="px-3 pt-3 pb-2">
-              <span
-                className="text-[0.6rem] font-semibold tracking-[0.15em] uppercase"
-                style={{ color: '#56687a' }}
-              >
-                Active Connections
-              </span>
-            </div>
-
-            <div className="flex-1 overflow-y-auto">
-              {sessionHosts.map(({ session, host }) => {
-                const isActive = session.id === activeSessionId
-                return (
-                  <div
-                    key={session.id}
-                    onClick={() => setActiveSession(session.id)}
-                    className="flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors"
-                    style={{
-                      borderLeft: isActive ? '3px solid #a8e8ff' : '3px solid transparent',
-                      background: isActive ? 'rgba(168,232,255,0.06)' : 'transparent',
-                    }}
-                  >
-                    <SessionTypeIcon hostId={session.hostId} />
-                    <span
-                      className="text-[0.6875rem] font-semibold truncate"
-                      style={{
-                        fontFamily: "'Inter', sans-serif",
-                        color: isActive ? '#a8e8ff' : '#8a9bb0',
-                        letterSpacing: '0.03em',
-                      }}
-                    >
-                      {host?.label?.toUpperCase() ?? session.hostId.toUpperCase()}
-                    </span>
-                  </div>
-                )
-              })}
-
-              {/* Demo mock connections when no real sessions */}
-              {sessionHosts.length === 0 && (
-                <MockConnections activeHost={activeHost?.label ?? 'PRODUCTION DB'} />
-              )}
-            </div>
-
-            {/* NEW HOST */}
-            <div className="px-2 py-2" style={{ borderTop: '1px solid #1d2126' }}>
-              <button
-                onClick={() => setIsAddHostOpen(true)}
-                className="w-full py-2 text-[0.6rem] font-bold tracking-[0.1em] uppercase transition-opacity hover:opacity-90"
-                style={{
-                  background: 'linear-gradient(135deg, #a8e8ff, #00d4ff)',
-                  color: '#0c0e11',
-                  borderRadius: '4px',
-                  fontFamily: "'Inter', sans-serif",
-                }}
-              >
-                New Host
-              </button>
-            </div>
-
-            {/* SUPPORT */}
-            <div
-              className="flex items-center gap-2 px-3 py-2"
-              style={{ borderTop: '1px solid #1d2126' }}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#56687a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
-              <span
-                className="text-[0.6rem] tracking-widest uppercase"
-                style={{ color: '#56687a', fontFamily: "'Inter', sans-serif" }}
-              >
-                Support
-              </span>
-            </div>
-          </aside>
-
           {/* Main content */}
           <div className="flex-1 min-w-0 relative">{children}</div>
 
@@ -641,79 +558,4 @@ function NavIcon({ name, active }: { name: string; active: boolean }) {
   )
 }
 
-/** Icon for each connection type in the session sidebar */
-function SessionTypeIcon({ hostId }: { hostId: string }) {
-  const id = hostId.toLowerCase()
-  // DB connections
-  if (id.includes('db') || id.includes('data')) {
-    return (
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a8e8ff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
-      </svg>
-    )
-  }
-  // Web / server
-  if (id.includes('web') || id.includes('srv') || id.includes('server')) {
-    return (
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a8e8ff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="2" width="20" height="8" rx="2" ry="2" /><rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
-        <line x1="6" y1="6" x2="6.01" y2="6" /><line x1="6" y1="18" x2="6.01" y2="18" />
-      </svg>
-    )
-  }
-  // Auth / keys
-  if (id.includes('auth') || id.includes('key')) {
-    return (
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a8e8ff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-      </svg>
-    )
-  }
-  // Lock / vault
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a8e8ff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
-  )
-}
 
-/** Static mock connections shown in demo/empty state */
-function MockConnections({ activeHost }: { activeHost: string }) {
-  const mocks = [
-    { label: 'PRODUCTION DB',  icon: 'db'   },
-    { label: 'WEB-SRV-01',     icon: 'web'  },
-    { label: 'AUTH-NODES',     icon: 'auth' },
-    { label: 'VAULT-PRIMARY',  icon: 'lock' },
-  ]
-  return (
-    <>
-      {mocks.map((m) => {
-        const isActive = m.label === activeHost || activeHost.includes('PRODUCTION')
-          ? m.label === 'PRODUCTION DB'
-          : m.label === activeHost
-        return (
-          <div
-            key={m.label}
-            className="flex items-center gap-2 px-3 py-2 cursor-pointer"
-            style={{
-              borderLeft: isActive ? '3px solid #a8e8ff' : '3px solid transparent',
-              background: isActive ? 'rgba(168,232,255,0.06)' : 'transparent',
-            }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: '#22c55e' }} />
-            <span
-              className="text-[0.6rem] font-semibold truncate"
-              style={{
-                fontFamily: "'Inter', sans-serif",
-                color: isActive ? '#a8e8ff' : '#8a9bb0',
-                letterSpacing: '0.06em',
-              }}
-            >
-              {m.label}
-            </span>
-          </div>
-        )
-      })}
-    </>
-  )
-}
