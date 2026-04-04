@@ -17,12 +17,13 @@ interface AppLayoutProps {
 
 /** Navigation items (dashboard mode) */
 const NAV_ITEMS = [
+  { id: 'connections', label: 'CONNECTIONS', icon: 'folder' },
   { id: 'vault', label: 'VAULT', icon: 'lock' },
 ] as const
 
 export function AppLayout({ children }: AppLayoutProps) {
   const [isAddHostOpen, setIsAddHostOpen] = useState(false)
-  const [activeNav, setActiveNav]         = useState<string | null>(null)
+  const [activeNav, setActiveNav]         = useState<string>('connections')
 
   // Connection state
   const [connectError, setConnectError]         = useState<string | null>(null)
@@ -281,59 +282,6 @@ export function AppLayout({ children }: AppLayoutProps) {
                       </button>
                     ))}
                   </div>
-
-                  {/* Connections section */}
-                  <div className="px-2 pt-2 pb-1">
-                    <div className="flex items-center gap-1.5 px-2 py-1">
-                      <span
-                        className="text-[0.55rem] font-semibold tracking-[0.1em] uppercase"
-                        style={{ color: '#3c494e', fontFamily: "'Inter', sans-serif" }}
-                      >
-                        Connections
-                      </span>
-                      <div className="flex-1 h-px" style={{ background: '#1d2126' }} />
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                      {hosts.map((host) => {
-                        const existingSession = Array.from(sessions.values()).find((s) => s.hostId === host.id)
-                        const isConnected = !!existingSession
-                        return (
-                          <button
-                            key={host.id}
-                            onClick={() => handleConnect(host)}
-                            className="flex items-center gap-2 px-2 py-1.5 rounded text-left w-full transition-colors hover:bg-white/5"
-                          >
-                            <span
-                              className="shrink-0"
-                              style={{ color: isConnected ? '#4ade80' : '#3c494e', fontSize: '0.5rem' }}
-                            >●</span>
-                            <div className="flex flex-col min-w-0">
-                              <span
-                                className="truncate text-[0.6875rem] font-medium leading-tight"
-                                style={{ fontFamily: "'Inter', sans-serif", color: '#c4cdd8' }}
-                              >
-                                {host.label}
-                              </span>
-                              <span
-                                className="truncate text-[0.5625rem] leading-tight"
-                                style={{ fontFamily: "'JetBrains Mono', monospace", color: '#56687a' }}
-                              >
-                                {host.username}@{host.hostname}
-                              </span>
-                            </div>
-                          </button>
-                        )
-                      })}
-                      {hosts.length === 0 && (
-                        <p
-                          className="px-2 py-1 text-[0.6rem]"
-                          style={{ color: '#3c494e', fontFamily: "'Inter', sans-serif" }}
-                        >
-                          No saved hosts yet
-                        </p>
-                      )}
-                    </div>
-                  </div>
                 </div>
                 <div className="px-2 py-2" style={{ borderTop: '1px solid #1d2126' }}>
                   <button
@@ -475,7 +423,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           className="w-[200px] shrink-0 flex flex-col"
           style={{ background: '#111317', borderRight: '1px solid #1d2126' }}
         >
-          {/* Nav items + Connections */}
+          {/* Nav items */}
           <div className="flex-1 overflow-y-auto">
             <div className="px-2 pt-3 pb-2 flex flex-col gap-0.5">
               {NAV_ITEMS.map((item) => (
@@ -496,58 +444,6 @@ export function AppLayout({ children }: AppLayoutProps) {
                   {item.label}
                 </button>
               ))}
-            </div>
-
-            {/* Connections section */}
-            <div className="px-2 pt-2 pb-1">
-              <div className="flex items-center gap-1.5 px-2 py-1">
-                <span
-                  className="text-[0.55rem] font-semibold tracking-[0.1em] uppercase"
-                  style={{ color: '#3c494e', fontFamily: "'Inter', sans-serif" }}
-                >
-                  Connections
-                </span>
-                <div className="flex-1 h-px" style={{ background: '#1d2126' }} />
-              </div>
-              <div className="flex flex-col gap-0.5">
-                {hosts.map((host) => {
-                  const isConnected = Array.from(sessions.values()).some((s) => s.hostId === host.id)
-                  return (
-                    <button
-                      key={host.id}
-                      onClick={() => handleConnect(host)}
-                      className="flex items-center gap-2 px-2 py-1.5 rounded text-left w-full transition-colors hover:bg-white/5"
-                    >
-                      <span
-                        className="shrink-0"
-                        style={{ color: isConnected ? '#4ade80' : '#3c494e', fontSize: '0.5rem' }}
-                      >●</span>
-                      <div className="flex flex-col min-w-0">
-                        <span
-                          className="truncate text-[0.6875rem] font-medium leading-tight"
-                          style={{ fontFamily: "'Inter', sans-serif", color: '#c4cdd8' }}
-                        >
-                          {host.label}
-                        </span>
-                        <span
-                          className="truncate text-[0.5625rem] leading-tight"
-                          style={{ fontFamily: "'JetBrains Mono', monospace", color: '#56687a' }}
-                        >
-                          {host.username}@{host.hostname}
-                        </span>
-                      </div>
-                    </button>
-                  )
-                })}
-                {hosts.length === 0 && (
-                  <p
-                    className="px-2 py-1 text-[0.6rem]"
-                    style={{ color: '#3c494e', fontFamily: "'Inter', sans-serif" }}
-                  >
-                    No saved hosts yet
-                  </p>
-                )}
-              </div>
             </div>
           </div>
 
