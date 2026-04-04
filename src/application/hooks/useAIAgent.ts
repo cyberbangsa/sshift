@@ -5,6 +5,8 @@ import { SendAIMessage } from '@/domain/usecases'
 import { OpenRouterClient } from '@/infrastructure/api'
 
 const RUN_TAG_RE = /<run>([\s\S]*?)<\/run>/g
+const FENCE_RE = /```(\w*)\n?([\s\S]*?)```/g
+const SHELL_LANGS = new Set(['bash', 'sh', 'shell', 'zsh', 'fish', 'console', ''])
 
 /** Extracts the first <run>...</run> command and returns cleaned content + command. */
 function extractRunCommand(content: string): { content: string; command: string | undefined } {
@@ -14,6 +16,21 @@ function extractRunCommand(content: string): { content: string; command: string 
   const command = match[1].trim()
   const cleaned = content.replace(/<run>[\s\S]*?<\/run>/g, '').trim()
   return { content: cleaned, command }
+}
+
+/** Extracts all fenced shell code blocks from an AI response. */
+function extractShellBlocks(content: string): string[] {
+  const blocks: string[] = []
+  FENCE_RE.lastIndex = 0
+  let match: RegExpExecArray | null
+  while ((match = FENCE_RE.exec(content)) !== null) {
+    const lang = (match[1] ?? '').toLowerCase()
+    if (SHELL_LANGS.has(lang)) {
+      const code = match[2].trim()
+      if (code) blocks.push(code)
+    }
+  }
+  return blocks
 }
 
 export function useAIAgent(onRunCommand?: (cmd: string) => void) {
@@ -61,9 +78,17 @@ export function useAIAgent(onRunCommand?: (cmd: string) => void) {
 
         addMessage(finalMessage)
 
-        // Execute the command if in auto mode
-        if (command && executionMode === 'auto' && onRunCommand) {
-          onRunCommand(command)
+        // Auto mode: execute the command from <run> tag, or fall back to all
+        // fenced shell code blocks in the response (LLMs often skip the tag).
+        if (executionMode === 'auto' && onRunCommand) {
+          if (command) {
+            onRunCommand(command)
+          } else {
+            const shellBlocks = extractShellBlocks(rawResponse.content)
+            for (const block of shellBlocks) {
+              onRunCommand(block)
+            }
+          }
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'AI request failed')

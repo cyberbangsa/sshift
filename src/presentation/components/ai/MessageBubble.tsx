@@ -211,7 +211,13 @@ export function MessageBubble({ message, onRunCommand, executionMode = 'manual' 
       <div className="flex-1 min-w-0">
         {segments.map((seg, i) =>
           seg.type === 'code' ? (
-            <CodeBlock key={i} lang={seg.lang} code={seg.value} onRunCommand={onRunCommand} />
+            <CodeBlock
+              key={i}
+              lang={seg.lang}
+              code={seg.value}
+              onRunCommand={onRunCommand}
+              isExecuted={executionMode === 'auto' && RUNNABLE_LANGS.has(seg.lang.toLowerCase())}
+            />
           ) : (
             <p
               key={i}
