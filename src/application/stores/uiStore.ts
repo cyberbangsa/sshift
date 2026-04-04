@@ -7,6 +7,7 @@ interface UIState {
   isSidebarCollapsed: boolean
   isExplorerVisible: boolean
   isAIPanelVisible: boolean
+  isSettingsOpen: boolean
   activeTab: 'terminal' | 'explorer' | 'transfers'
 }
 
@@ -17,6 +18,8 @@ interface UIActions {
   toggleSidebar: () => void
   toggleExplorer: () => void
   toggleAIPanel: () => void
+  openSettings: () => void
+  closeSettings: () => void
   setActiveTab: (tab: UIState['activeTab']) => void
 }
 
@@ -29,6 +32,7 @@ export const useUIStore = create<UIStore>((set) => ({
   isSidebarCollapsed: false,
   isExplorerVisible: true,
   isAIPanelVisible: false,
+  isSettingsOpen: false,
   activeTab: 'terminal',
   setSidebarWidth: (sidebarWidth) => set({ sidebarWidth }),
   setExplorerWidth: (explorerWidth) => set({ explorerWidth }),
@@ -39,5 +43,7 @@ export const useUIStore = create<UIStore>((set) => ({
     set((state) => ({ isExplorerVisible: !state.isExplorerVisible })),
   toggleAIPanel: () =>
     set((state) => ({ isAIPanelVisible: !state.isAIPanelVisible })),
+  openSettings: () => set({ isSettingsOpen: true }),
+  closeSettings: () => set({ isSettingsOpen: false }),
   setActiveTab: (activeTab) => set({ activeTab }),
 }))

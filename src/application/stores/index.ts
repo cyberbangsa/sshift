@@ -12,3 +12,6 @@ export type { AIStore } from './aiStore'
 
 export { useUIStore } from './uiStore'
 export type { UIStore } from './uiStore'
+
+export { useSettingsStore } from './settingsStore'
+export type { SettingsStore } from './settingsStore'

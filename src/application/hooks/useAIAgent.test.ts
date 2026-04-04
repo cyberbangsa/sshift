@@ -1,29 +1,53 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAIAgent } from './useAIAgent'
-import { MockAIClient } from '@/test/mocks'
-import { useAIStore } from '@/application/stores'
+import { useAIStore, useSettingsStore } from '@/application/stores'
+import { DEFAULT_SETTINGS } from '@/domain/entities'
 
 describe('useAIAgent', () => {
-  let client: MockAIClient
-
   beforeEach(() => {
-    client = new MockAIClient({ response: 'AI says hello' })
-    useAIStore.setState({
-      messages: [],
-      isStreaming: false,
+    useAIStore.setState({ messages: [], isStreaming: false, error: null })
+    useSettingsStore.setState({
+      settings: { ...DEFAULT_SETTINGS },
+      openRouterApiKey: null,
+      isApiKeyLoaded: true,
+      isSaving: false,
       error: null,
     })
   })
 
-  it('should send a message and receive a response', async () => {
-    const { result } = renderHook(() => useAIAgent(client))
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('should report error when no API key is configured', async () => {
+    const { result } = renderHook(() => useAIAgent())
 
     await act(async () => {
       await result.current.sendMessage('Hello AI')
     })
 
-    // Should have user message + assistant response
+    expect(result.current.error).toMatch(/API key/)
+    expect(result.current.messages).toHaveLength(0)
+    expect(result.current.hasApiKey).toBe(false)
+  })
+
+  it('should send a message and receive a response when API key is set', async () => {
+    useSettingsStore.setState({ openRouterApiKey: 'sk-test-key' })
+
+    const mockResponse = {
+      choices: [{ message: { content: 'AI says hello' } }],
+    }
+    vi.spyOn(global, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    )
+
+    const { result } = renderHook(() => useAIAgent())
+
+    await act(async () => {
+      await result.current.sendMessage('Hello AI')
+    })
+
     expect(result.current.messages).toHaveLength(2)
     expect(result.current.messages[0].role).toBe('user')
     expect(result.current.messages[0].content).toBe('Hello AI')
@@ -31,34 +55,53 @@ describe('useAIAgent', () => {
     expect(result.current.messages[1].content).toBe('AI says hello')
   })
 
-  it('should set streaming state during request', async () => {
-    const { result } = renderHook(() => useAIAgent(client))
+  it('should set error when API request fails', async () => {
+    useSettingsStore.setState({ openRouterApiKey: 'sk-test-key' })
 
-    expect(result.current.isStreaming).toBe(false)
+    vi.spyOn(global, 'fetch').mockResolvedValueOnce(
+      new Response('Unauthorized', { status: 401 }),
+    )
 
-    await act(async () => {
-      await result.current.sendMessage('Test')
-    })
-
-    expect(result.current.isStreaming).toBe(false)
-  })
-
-  it('should set error when AI client fails', async () => {
-    client = new MockAIClient({ shouldFail: true })
-    const { result } = renderHook(() => useAIAgent(client))
+    const { result } = renderHook(() => useAIAgent())
 
     await act(async () => {
       await result.current.sendMessage('Hello')
     })
 
-    expect(result.current.error).toBe('AI service unavailable')
-    // User message was still added
+    expect(result.current.error).toBeTruthy()
     expect(result.current.messages).toHaveLength(1)
     expect(result.current.messages[0].role).toBe('user')
   })
 
+  it('should set streaming state during request', async () => {
+    useSettingsStore.setState({ openRouterApiKey: 'sk-test-key' })
+
+    let resolveResponse!: (v: Response) => void
+    const pending = new Promise<Response>((r) => { resolveResponse = r })
+    vi.spyOn(global, 'fetch').mockReturnValueOnce(pending)
+
+    const { result } = renderHook(() => useAIAgent())
+
+    const sendPromise = act(async () => {
+      // do not await yet
+      result.current.sendMessage('Test')
+    })
+
+    // Resolve immediately
+    resolveResponse(new Response(JSON.stringify({ choices: [{ message: { content: 'hi' } }] }), { status: 200 }))
+    await sendPromise
+
+    expect(result.current.isStreaming).toBe(false)
+  })
+
   it('should clear messages', async () => {
-    const { result } = renderHook(() => useAIAgent(client))
+    useSettingsStore.setState({ openRouterApiKey: 'sk-test-key' })
+
+    vi.spyOn(global, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ choices: [{ message: { content: 'hi' } }] }), { status: 200 }),
+    )
+
+    const { result } = renderHook(() => useAIAgent())
 
     await act(async () => {
       await result.current.sendMessage('Hello')
@@ -72,3 +115,4 @@ describe('useAIAgent', () => {
     expect(result.current.messages).toHaveLength(0)
   })
 })
+

@@ -3,6 +3,7 @@ import {
   createRootRoute,
   createRoute,
 } from '@tanstack/react-router'
+import { Settings } from '@/presentation/pages'
 
 const rootRoute = createRootRoute()
 
@@ -16,11 +17,17 @@ const sessionRoute = createRoute({
   path: '/session/$sessionId',
 })
 
-const routeTree = rootRoute.addChildren([indexRoute, sessionRoute])
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/settings',
+  component: Settings,
+})
+
+const routeTree = rootRoute.addChildren([indexRoute, sessionRoute, settingsRoute])
 
 export const router = createRouter({ routeTree })
 
-export { indexRoute, sessionRoute }
+export { indexRoute, sessionRoute, settingsRoute }
 
 declare module '@tanstack/react-router' {
   interface Register {
