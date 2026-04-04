@@ -1,6 +1,6 @@
 import type { ReactNode, CSSProperties } from 'react'
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { useHostStore, useSessionStore, useUIStore, useSettingsStore } from '@/application/stores'
+import { useHostStore, useSessionStore, useUIStore, useSettingsStore, useTerminalStore } from '@/application/stores'
 import { useHost, useSession, useAIAgent } from '@/application/hooks'
 import { hostRepository, sessionRepository } from '@/infrastructure/repositories'
 import { HostList, AddHostModal } from '@/presentation/components/sidebar'
@@ -38,7 +38,15 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { isAIPanelVisible, toggleAIPanel, openSettings } = useUIStore()
   const { selectedHostId }                  = useHostStore()
   const { sessions, activeSessionId, setActiveSession } = useSessionStore()
-  const { messages, isStreaming, error, sendMessage, clearMessages } = useAIAgent()
+  const { activeTerminalHandle } = useTerminalStore()
+
+  // Callback that writes a command to the active terminal pane
+  const onRunCommand = useCallback((cmd: string) => {
+    activeTerminalHandle?.write(cmd + '\r')
+    activeTerminalHandle?.focus()
+  }, [activeTerminalHandle])
+
+  const { messages, isStreaming, error, sendMessage, clearMessages } = useAIAgent(onRunCommand)
   const { loadApiKey, isApiKeyLoaded } = useSettingsStore()
   const { hosts, saveHost, deleteHost, selectHost } = useHost(hostRepository)
   const { connectHost, disconnectSession } = useSession(sessionRepository)
@@ -327,6 +335,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               error={error}
               onSendMessage={sendMessage}
               onClearChat={clearMessages}
+              onRunCommand={onRunCommand}
             />
           </div>
         </div>
@@ -514,8 +523,9 @@ export function AppLayout({ children }: AppLayoutProps) {
                 messages={messages}
                 isStreaming={isStreaming}
                 error={error}
-                onSendMessage={() => {}}
+                onSendMessage={sendMessage}
                 onClearChat={clearMessages}
+                onRunCommand={onRunCommand}
               />
             </div>
           )}

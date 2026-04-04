@@ -16,7 +16,7 @@ describe('AIPanel', () => {
   it('should render the AI panel header', () => {
     render(<AIPanel {...defaultProps} />)
 
-    expect(screen.getByText('SSHift AI')).toBeInTheDocument()
+    expect(screen.getByText('Shift AI Agent')).toBeInTheDocument()
   })
 
   it('should render messages', () => {
@@ -34,8 +34,8 @@ describe('AIPanel', () => {
     const user = userEvent.setup()
     render(<AIPanel {...defaultProps} />)
 
-    await user.type(screen.getByPlaceholderText('Ask SSHift AI...'), 'Test message')
-    await user.click(screen.getByText('Send'))
+    await user.type(screen.getByPlaceholderText('Ask AI about this session\u2026'), 'Test message')
+    await user.click(screen.getByRole('button', { name: /send message/i }))
 
     expect(defaultProps.onSendMessage).toHaveBeenCalledWith('Test message')
   })
@@ -44,8 +44,8 @@ describe('AIPanel', () => {
     const user = userEvent.setup()
     render(<AIPanel {...defaultProps} />)
 
-    const textarea = screen.getByPlaceholderText('Ask SSHift AI...')
-    await user.type(textarea, 'Enter test{Enter}')
+    const input = screen.getByPlaceholderText('Ask AI about this session\u2026')
+    await user.type(input, 'Enter test{Enter}')
 
     expect(defaultProps.onSendMessage).toHaveBeenCalled()
   })
@@ -55,7 +55,7 @@ describe('AIPanel', () => {
     const user = userEvent.setup()
     render(<AIPanel {...defaultProps} onSendMessage={onSendMessage} />)
 
-    await user.click(screen.getByText('Send'))
+    await user.click(screen.getByRole('button', { name: /send message/i }))
 
     expect(onSendMessage).not.toHaveBeenCalled()
   })
@@ -69,13 +69,14 @@ describe('AIPanel', () => {
   it('should render action chips', () => {
     render(<AIPanel {...defaultProps} />)
 
-    expect(screen.getByText('List files')).toBeInTheDocument()
-    expect(screen.getByText('Disk space')).toBeInTheDocument()
+    expect(screen.getByText('Run with sudo')).toBeInTheDocument()
+    expect(screen.getByText('Check ownership')).toBeInTheDocument()
+    expect(screen.getByText('Explain error in detail')).toBeInTheDocument()
   })
 
   it('should disable send button while streaming', () => {
     render(<AIPanel {...defaultProps} isStreaming={true} />)
 
-    expect(screen.getByText('Send')).toBeDisabled()
+    expect(screen.getByRole('button', { name: /send message/i })).toBeDisabled()
   })
 })

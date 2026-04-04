@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { AIMessage } from '@/domain/entities'
+import { useAIStore } from '@/application/stores'
 import { ChatThread } from './ChatThread'
 import { ActionChips } from './ActionChips'
 
@@ -9,6 +10,7 @@ interface AIPanelProps {
   error: string | null
   onSendMessage: (message: string) => void
   onClearChat: () => void
+  onRunCommand?: (cmd: string) => void
 }
 
 export function AIPanel({
@@ -17,8 +19,11 @@ export function AIPanel({
   error,
   onSendMessage,
   onClearChat,
+  onRunCommand,
 }: AIPanelProps) {
   const [input, setInput] = useState('')
+  const { executionMode, setExecutionMode } = useAIStore()
+  const isAutoMode = executionMode === 'auto'
 
   const handleSend = () => {
     const trimmed = input.trim()
@@ -54,6 +59,32 @@ export function AIPanel({
           </span>
         </div>
         <div className="flex items-center gap-2">
+          {/* Mode toggle: Manual | Auto */}
+          <div
+            className="flex items-center rounded overflow-hidden text-[0.55rem] font-semibold"
+            style={{ border: '1px solid #252a30', fontFamily: "'Inter', sans-serif" }}
+          >
+            <button
+              onClick={() => setExecutionMode('manual')}
+              className="px-2 py-0.5 transition-colors"
+              style={{
+                background: !isAutoMode ? 'rgba(168,232,255,0.12)' : 'transparent',
+                color: !isAutoMode ? '#a8e8ff' : '#56687a',
+              }}
+            >
+              Manual
+            </button>
+            <button
+              onClick={() => setExecutionMode('auto')}
+              className="px-2 py-0.5 transition-colors"
+              style={{
+                background: isAutoMode ? 'rgba(251,191,36,0.12)' : 'transparent',
+                color: isAutoMode ? '#fbbf24' : '#56687a',
+              }}
+            >
+              Auto
+            </button>
+          </div>
           {/* Status dot */}
           <span className="w-2 h-2 rounded-full" style={{ background: '#22c55e' }} />
           {/* Clear button */}
@@ -71,7 +102,26 @@ export function AIPanel({
       </div>
 
       {/* ── Thread ──────────────────────────────────────────── */}
-      <ChatThread messages={messages} isStreaming={isStreaming} />
+      <ChatThread
+        messages={messages}
+        isStreaming={isStreaming}
+        onRunCommand={onRunCommand}
+        executionMode={executionMode}
+      />
+
+      {/* Auto-mode warning banner */}
+      {isAutoMode && (
+        <div
+          className="px-3 py-1.5 shrink-0 flex items-center gap-1.5 text-[0.6rem]"
+          style={{ background: 'rgba(251,191,36,0.06)', borderTop: '1px solid rgba(251,191,36,0.15)', color: '#fbbf24', fontFamily: "'Inter', sans-serif" }}
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+          Auto mode: AI can run commands directly
+        </div>
+      )}
 
       {error && (
         <div

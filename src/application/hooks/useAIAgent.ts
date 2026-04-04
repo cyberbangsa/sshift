@@ -4,8 +4,20 @@ import type { AIMessage } from '@/domain/entities'
 import { SendAIMessage } from '@/domain/usecases'
 import { OpenRouterClient } from '@/infrastructure/api'
 
-export function useAIAgent() {
-  const { messages, isStreaming, error, addMessage, setStreaming, setError, clearMessages } = useAIStore()
+const RUN_TAG_RE = /<run>([\s\S]*?)<\/run>/g
+
+/** Extracts the first <run>...</run> command and returns cleaned content + command. */
+function extractRunCommand(content: string): { content: string; command: string | undefined } {
+  const match = RUN_TAG_RE.exec(content)
+  RUN_TAG_RE.lastIndex = 0 // reset stateful regex
+  if (!match) return { content, command: undefined }
+  const command = match[1].trim()
+  const cleaned = content.replace(/<run>[\s\S]*?<\/run>/g, '').trim()
+  return { content: cleaned, command }
+}
+
+export function useAIAgent(onRunCommand?: (cmd: string) => void) {
+  const { messages, isStreaming, error, addMessage, setStreaming, setError, clearMessages, executionMode, setExecutionMode } = useAIStore()
   const { settings, openRouterApiKey } = useSettingsStore()
 
   const aiClient = useMemo(() => {
@@ -36,15 +48,30 @@ export function useAIAgent() {
 
       try {
         const useCase = new SendAIMessage(aiClient)
-        const response = await useCase.execute(messages, content)
-        addMessage(response)
+        const rawResponse = await useCase.execute(messages, content)
+
+        // Extract any <run>...</run> command from the response
+        const { content: cleanedContent, command } = extractRunCommand(rawResponse.content)
+
+        const finalMessage: AIMessage = {
+          ...rawResponse,
+          content: cleanedContent,
+          commandExecuted: command,
+        }
+
+        addMessage(finalMessage)
+
+        // Execute the command if in auto mode
+        if (command && executionMode === 'auto' && onRunCommand) {
+          onRunCommand(command)
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'AI request failed')
       } finally {
         setStreaming(false)
       }
     },
-    [aiClient, messages, addMessage, setStreaming, setError],
+    [aiClient, messages, addMessage, setStreaming, setError, executionMode, onRunCommand],
   )
 
   return {
@@ -54,5 +81,8 @@ export function useAIAgent() {
     sendMessage,
     clearMessages,
     hasApiKey: openRouterApiKey !== null,
+    executionMode,
+    setExecutionMode,
   }
 }
+

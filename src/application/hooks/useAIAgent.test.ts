@@ -6,7 +6,7 @@ import { DEFAULT_SETTINGS } from '@/domain/entities'
 
 describe('useAIAgent', () => {
   beforeEach(() => {
-    useAIStore.setState({ messages: [], isStreaming: false, error: null })
+    useAIStore.setState({ messages: [], isStreaming: false, error: null, executionMode: 'manual' })
     useSettingsStore.setState({
       settings: { ...DEFAULT_SETTINGS },
       openRouterApiKey: null,
