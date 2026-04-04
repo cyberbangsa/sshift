@@ -8,6 +8,8 @@ export interface TerminalHandle {
   write: (data: string | Uint8Array) => void
   clear: () => void
   focus: () => void
+  sendInput: (data: string) => void
+  captureOutput: (timeoutMs?: number) => Promise<string>
 }
 
 interface TerminalStoreState {

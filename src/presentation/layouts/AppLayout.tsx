@@ -40,13 +40,21 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { sessions, activeSessionId, setActiveSession } = useSessionStore()
   const { activeTerminalHandle } = useTerminalStore()
 
-  // Callback that writes a command to the active terminal pane
+  // For manual Run button clicks in the AI chat UI — fire and forget
   const onRunCommand = useCallback((cmd: string) => {
-    activeTerminalHandle?.write(cmd + '\r')
+    activeTerminalHandle?.sendInput(cmd + '\r')
     activeTerminalHandle?.focus()
   }, [activeTerminalHandle])
 
-  const { messages, isStreaming, error, sendMessage, clearMessages, executionMode, setExecutionMode } = useAIAgent(onRunCommand)
+  // For the agentic loop — sends the command and returns the terminal output
+  const agentRunCommand = useCallback(async (cmd: string): Promise<string> => {
+    if (!activeTerminalHandle) return ''
+    activeTerminalHandle.sendInput(cmd + '\r')
+    activeTerminalHandle.focus()
+    return activeTerminalHandle.captureOutput(8000)
+  }, [activeTerminalHandle])
+
+  const { messages, isStreaming, error, sendMessage, clearMessages, executionMode, setExecutionMode } = useAIAgent(agentRunCommand)
   const { loadApiKey, isApiKeyLoaded } = useSettingsStore()
   const { hosts, saveHost, deleteHost, selectHost } = useHost(hostRepository)
   const { connectHost, disconnectSession } = useSession(sessionRepository)
