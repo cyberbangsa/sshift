@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react'
 import { useSessionStore, useHostStore } from '@/application/stores'
 import { TerminalPane } from '@/presentation/components/terminal'
+import { FileExplorer } from '@/presentation/components/explorer'
 import type { TerminalPaneHandle } from '@/presentation/components/terminal'
 
-type ContentTab = 'terminal' | 'explorer' | 'transfers'
+type ContentTab = 'terminal' | 'explorer'
 
 interface ActiveSessionProps {
   sessionId: string
@@ -26,16 +27,6 @@ const CONTENT_TABS: { id: ContentTab; label: string; icon: React.ReactNode }[] =
     icon: (
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-      </svg>
-    ),
-  },
-  {
-    id: 'transfers',
-    label: 'Transfers',
-    icon: (
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" />
-        <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
       </svg>
     ),
   },
@@ -100,7 +91,7 @@ export function ActiveSession({ sessionId, onClosed }: ActiveSessionProps) {
           )}
         </div>
 
-        {/* File Explorer */}
+        {/* File Explorer — always mounted to preserve navigation state */}
         <div
           style={{
             position: 'absolute', inset: 0,
@@ -108,22 +99,16 @@ export function ActiveSession({ sessionId, onClosed }: ActiveSessionProps) {
             pointerEvents: activeTab === 'explorer' ? 'auto' : 'none',
           }}
         >
-          <div className="flex items-center justify-center h-full" style={{ color: '#56687a', fontSize: '0.75rem' }}>
-            File Explorer — coming soon
-          </div>
-        </div>
-
-        {/* Transfers */}
-        <div
-          style={{
-            position: 'absolute', inset: 0,
-            visibility: activeTab === 'transfers' ? 'visible' : 'hidden',
-            pointerEvents: activeTab === 'transfers' ? 'auto' : 'none',
-          }}
-        >
-          <div className="flex items-center justify-center h-full" style={{ color: '#56687a', fontSize: '0.75rem' }}>
-            Transfer Queue — coming soon
-          </div>
+          {activeSession ? (
+            <FileExplorer
+              sessionId={activeSession.id}
+              hostLabel={activeHost?.label ?? activeHost?.hostname ?? sessionId}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full" style={{ color: '#56687a', fontSize: '0.75rem' }}>
+              Select a session to view files
+            </div>
+          )}
         </div>
       </div>
 

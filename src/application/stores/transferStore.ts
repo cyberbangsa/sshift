@@ -1,35 +1,103 @@
 import { create } from 'zustand'
-import type { Transfer } from '@/domain/entities'
+import { listen } from '@tauri-apps/api/event'
+
+// ── Transfer entity (richer than the old domain Transfer) ────────────────────
+
+export interface TransferItem {
+  id: string
+  sessionId: string
+  filename: string
+  sourcePath: string
+  destPath: string
+  direction: 'upload' | 'download'
+  status: 'active' | 'complete' | 'failed'
+  progress: number // 0-100
+  bytesTransferred: number
+  totalBytes: number
+  error?: string
+}
+
+// Tauri emits this shape on `transfer-progress:{id}`
+interface TransferProgressPayload {
+  transferId: string
+  bytesTransferred: number
+  totalBytes: number
+  percent: number
+  status: 'active' | 'complete' | 'failed'
+}
+
+// ── Store ─────────────────────────────────────────────────────────────────────
 
 interface TransferState {
-  transfers: Transfer[]
+  transfers: Map<string, TransferItem>
 }
 
 interface TransferActions {
-  addTransfer: (transfer: Transfer) => void
-  updateTransfer: (id: string, updates: Partial<Transfer>) => void
+  addTransfer: (item: TransferItem) => void
+  updateTransfer: (id: string, updates: Partial<TransferItem>) => void
   removeTransfer: (id: string) => void
-  clearCompleted: () => void
-  getActiveTransfers: () => Transfer[]
+  clearFinished: () => void
+  /** Subscribe to Tauri transfer-progress events for a given transferId.
+   *  Returns an unlisten callback — call it to stop listening. */
+  watchTransfer: (id: string) => Promise<() => void>
 }
 
-export type TransferStore = TransferState & TransferActions
+export const useTransferStore = create<TransferState & TransferActions>((set) => ({
+  transfers: new Map(),
 
-export const useTransferStore = create<TransferStore>((set, get) => ({
-  transfers: [],
-  addTransfer: (transfer) =>
-    set((state) => ({ transfers: [...state.transfers, transfer] })),
+  addTransfer: (item) =>
+    set((s) => {
+      const next = new Map(s.transfers)
+      next.set(item.id, item)
+      return { transfers: next }
+    }),
+
   updateTransfer: (id, updates) =>
-    set((state) => ({
-      transfers: state.transfers.map((t) => (t.id === id ? { ...t, ...updates } : t)),
-    })),
+    set((s) => {
+      const entry = s.transfers.get(id)
+      if (!entry) return s
+      const next = new Map(s.transfers)
+      next.set(id, { ...entry, ...updates })
+      return { transfers: next }
+    }),
+
   removeTransfer: (id) =>
-    set((state) => ({
-      transfers: state.transfers.filter((t) => t.id !== id),
-    })),
-  clearCompleted: () =>
-    set((state) => ({
-      transfers: state.transfers.filter((t) => t.status !== 'complete'),
-    })),
-  getActiveTransfers: () => get().transfers.filter((t) => t.status === 'active'),
+    set((s) => {
+      const next = new Map(s.transfers)
+      next.delete(id)
+      return { transfers: next }
+    }),
+
+  clearFinished: () =>
+    set((s) => {
+      const next = new Map(s.transfers)
+      for (const [id, t] of next) {
+        if (t.status === 'complete' || t.status === 'failed') next.delete(id)
+      }
+      return { transfers: next }
+    }),
+
+  watchTransfer: async (id: string) => {
+    const unlisten = await listen<TransferProgressPayload>(
+      `transfer-progress:${id}`,
+      (event) => {
+        const { bytesTransferred, totalBytes, percent, status } = event.payload
+        set((s) => {
+          const entry = s.transfers.get(id)
+          if (!entry) return s
+          const next = new Map(s.transfers)
+          next.set(id, {
+            ...entry,
+            bytesTransferred,
+            totalBytes,
+            progress: percent,
+            status,
+          })
+          return { transfers: next }
+        })
+      },
+    )
+    return unlisten
+  },
 }))
+
