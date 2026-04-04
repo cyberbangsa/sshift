@@ -9,6 +9,7 @@ use std::net::TcpStream;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{sync_channel, Receiver, SyncSender, TryRecvError};
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter};
 
 use crate::domain::entities::{AuthMethod, Host, Session, SessionStatus};
@@ -245,6 +246,10 @@ fn connection_thread(
         return;
     }
 
+    // Ask the server to send SSH keepalive messages every 30 s.
+    // We also call keepalive_send() manually in the loop for the client side.
+    ssh.set_keepalive(true, 30);
+
     // ── PTY shell channel ──────────────────────────────────────────────────────
     let mut channel = match ssh.channel_session() {
         Ok(c) => c,
@@ -288,9 +293,21 @@ fn connection_thread(
     ssh.set_blocking(false);
 
     let mut buf = vec![0u8; 8192];
-    let poll_sleep = std::time::Duration::from_millis(5);
+    let poll_sleep = Duration::from_millis(5);
+    // Send an SSH-level keepalive every 25 s to prevent server-side timeouts.
+    let keepalive_interval = Duration::from_secs(25);
+    let mut last_keepalive = Instant::now();
 
     loop {
+        // 0. Send SSH keepalive if due
+        if last_keepalive.elapsed() >= keepalive_interval {
+            ssh.set_blocking(true);
+            // keepalive_send() returns seconds until the next send is needed;
+            // we ignore the value and drive the timer ourselves.
+            let _ = ssh.keepalive_send();
+            ssh.set_blocking(false);
+            last_keepalive = Instant::now();
+        }
         // 1. Drain all pending input commands before reading output
         loop {
             match cmd_rx.try_recv() {
@@ -333,9 +350,15 @@ fn connection_thread(
                     buf[..n].to_vec(),
                 );
             }
-            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
+            // libssh2 non-blocking: EAGAIN can surface as any of these.
+            Err(e) if matches!(
+                e.kind(),
+                std::io::ErrorKind::WouldBlock
+                    | std::io::ErrorKind::TimedOut
+                    | std::io::ErrorKind::Interrupted
+            ) => {}
             Err(_) => {
-                // Unexpected read error — connection dropped
+                // Genuine connection error — notify frontend.
                 let _ = app.emit(&format!("terminal-closed:{session_id}"), -1i32);
                 return;
             }
