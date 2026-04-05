@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useRef } from 'react'
 import { useAIStore, useSettingsStore } from '@/application/stores'
+import { DEFAULT_SESSION_STATE } from '@/application/stores'
+import type { ExecutionMode } from '@/application/stores'
 import type { AIMessage, AIRule } from '@/domain/entities'
 import { SendAIMessage } from '@/domain/usecases'
 import { OpenRouterClient } from '@/infrastructure/api'
@@ -48,16 +50,38 @@ function extractReadFilePaths(content: string): string[] {
 }
 
 /**
+ * sessionId: the active SSH session this agent is scoped to.
+ *   Pass null/undefined when there is no active session (agent is disabled).
  * onRunCommand: runs a shell command and returns its terminal output.
  * onReadFile: reads a remote file via SFTP and returns its content.
  * Passing these lets the agent see results and continue autonomously.
  */
 export function useAIAgent(
+  sessionId: string | null | undefined,
   onRunCommand?: (cmd: string) => Promise<string>,
   onReadFile?: (path: string) => Promise<string>,
   hostRules?: AIRule[],
 ) {
-  const { messages, isStreaming, error, addMessage, setStreaming, setError, clearMessages, executionMode, setExecutionMode } = useAIStore()
+  // Derive per-session state reactively so the hook re-renders only when this
+  // session's slice changes (not when other tabs' AI state changes).
+  // IMPORTANT: fall back to the stable DEFAULT_SESSION_STATE constant (not an
+  // inline object literal) so Zustand's snapshot comparison doesn't see a new
+  // reference every render, which would cause an infinite update loop.
+  const { messages, isStreaming, error, executionMode } = useAIStore((s) =>
+    (sessionId ? s.sessions.get(sessionId) : undefined) ?? DEFAULT_SESSION_STATE,
+  )
+
+  // Use getState() for actions — they are stable references and don't need
+  // to trigger re-renders, so we avoid adding the whole store to the selector.
+  const storeActions = useAIStore
+
+  // Bound action helpers that always scope to the current sessionId.
+  const addMessage    = useCallback((msg: AIMessage) => { if (sessionId) storeActions.getState().addMessage(sessionId, msg) }, [storeActions, sessionId])
+  const setStreaming   = useCallback((v: boolean)     => { if (sessionId) storeActions.getState().setStreaming(sessionId, v) }, [storeActions, sessionId])
+  const setError       = useCallback((e: string|null) => { if (sessionId) storeActions.getState().setError(sessionId, e) }, [storeActions, sessionId])
+  const clearMessages  = useCallback(()               => { if (sessionId) storeActions.getState().clearMessages(sessionId) }, [storeActions, sessionId])
+  const setExecutionMode = useCallback((mode: ExecutionMode) => { if (sessionId) storeActions.getState().setExecutionMode(sessionId, mode) }, [storeActions, sessionId])
+
   const { settings, openRouterApiKey } = useSettingsStore()
   const abortRef = useRef<AbortController | null>(null)
 

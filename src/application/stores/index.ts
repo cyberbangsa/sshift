@@ -7,8 +7,8 @@ export type { SessionStore } from './sessionStore'
 export { useTransferStore } from './transferStore'
 export type { TransferStore } from './transferStore'
 
-export { useAIStore } from './aiStore'
-export type { AIStore, ExecutionMode } from './aiStore'
+export { useAIStore, DEFAULT_SESSION_STATE } from './aiStore'
+export type { AIStore, ExecutionMode, PerSessionAIState } from './aiStore'
 
 export { useUIStore } from './uiStore'
 export type { UIStore } from './uiStore'

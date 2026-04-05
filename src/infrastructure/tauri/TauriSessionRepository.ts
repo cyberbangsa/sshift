@@ -29,6 +29,7 @@ export class TauriSessionRepository implements ISessionRepository {
       authMethod: host.authMethod,
       privateKeyPath: host.privateKeyPath,
       password: host.password,
+      keyPassphrase: host.keyPassphrase,
     })
 
     const deserialized: Session = {
