@@ -1,6 +1,6 @@
 [package]
 name = "sshift"
-version = "0.1.0"
+version = "0.0.1"
 description = "SSHift - Secure SSH client with AI assistance"
 authors = ["SSHift Team"]
 license = "MIT"

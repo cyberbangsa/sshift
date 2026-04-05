@@ -8,7 +8,6 @@ use commands::{
     session_commands::*,
     settings_commands::*,
     transfer_commands::*,
-    vault_commands::*,
 };
 use infrastructure::ssh::SshManager;
 
@@ -51,10 +50,6 @@ pub fn run() {
             set_api_key,
             delete_api_key,
             read_remote_file,
-            get_all_vault_entries,
-            add_vault_entry,
-            rename_vault_entry,
-            delete_vault_entry,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
