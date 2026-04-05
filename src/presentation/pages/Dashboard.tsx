@@ -3,7 +3,7 @@ import { useHost, useSession } from '@/application/hooks'
 import { useSessionStore } from '@/application/stores'
 import { hostRepository, sessionRepository } from '@/infrastructure/repositories'
 import { AddHostModal } from '@/presentation/components/sidebar'
-import { Toast } from '@/presentation/shared'
+import { Toast, formatSshError } from '@/presentation/shared'
 import type { Host } from '@/domain/entities'
 
 export function Dashboard() {
@@ -59,8 +59,8 @@ export function Dashboard() {
       await connectHost(host)
     } catch (err) {
       console.error('[Dashboard] quick-connect failed:', err)
-      const msg = err instanceof Error ? err.message : typeof err === 'string' ? err : 'Connection failed'
-      setConnectError(msg)
+      const raw = err instanceof Error ? err.message : typeof err === 'string' ? err : 'Connection failed'
+      setConnectError(formatSshError(raw))
     } finally {
       setQuickConnecting(false)
     }
@@ -74,8 +74,8 @@ export function Dashboard() {
       await connectHost(host)
     } catch (err) {
       console.error('[Dashboard] connect failed:', err)
-      const msg = err instanceof Error ? err.message : typeof err === 'string' ? err : 'Connection failed'
-      setConnectError(msg)
+      const raw = err instanceof Error ? err.message : typeof err === 'string' ? err : 'Connection failed'
+      setConnectError(formatSshError(raw))
     } finally {
       setConnectingId(null)
     }
