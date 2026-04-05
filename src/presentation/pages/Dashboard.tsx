@@ -3,6 +3,7 @@ import { useHost, useSession } from '@/application/hooks'
 import { useSessionStore } from '@/application/stores'
 import { hostRepository, sessionRepository } from '@/infrastructure/repositories'
 import { AddHostModal } from '@/presentation/components/sidebar'
+import { Toast } from '@/presentation/shared'
 import type { Host } from '@/domain/entities'
 
 export function Dashboard() {
@@ -14,6 +15,7 @@ export function Dashboard() {
   const [connectingId, setConnectingId]          = useState<string | null>(null)
   const [editingHost, setEditingHost]            = useState<Host | null>(null)
   const [confirmDeleteId, setConfirmDeleteId]    = useState<string | null>(null)
+  const [connectError, setConnectError]          = useState<string | null>(null)
 
   useEffect(() => { loadHosts() }, [loadHosts])
 
@@ -53,9 +55,12 @@ export function Dashboard() {
 
     try {
       setQuickConnecting(true)
+      setConnectError(null)
       await connectHost(host)
     } catch (err) {
       console.error('[Dashboard] quick-connect failed:', err)
+      const msg = err instanceof Error ? err.message : typeof err === 'string' ? err : 'Connection failed'
+      setConnectError(msg)
     } finally {
       setQuickConnecting(false)
     }
@@ -65,9 +70,12 @@ export function Dashboard() {
   const handleConnectHost = useCallback(async (host: Host) => {
     try {
       setConnectingId(host.id)
+      setConnectError(null)
       await connectHost(host)
     } catch (err) {
       console.error('[Dashboard] connect failed:', err)
+      const msg = err instanceof Error ? err.message : typeof err === 'string' ? err : 'Connection failed'
+      setConnectError(msg)
     } finally {
       setConnectingId(null)
     }
@@ -178,6 +186,13 @@ export function Dashboard() {
         onClose={() => setEditingHost(null)}
         onSave={async (host) => { await saveHost(host); setEditingHost(null) }}
         editHost={editingHost}
+      />
+    )}
+    {connectError && (
+      <Toast
+        message={connectError}
+        type="error"
+        onDismiss={() => setConnectError(null)}
       />
     )}
     </>
