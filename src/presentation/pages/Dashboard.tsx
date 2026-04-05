@@ -2,15 +2,18 @@ import { useCallback, useEffect, useState } from 'react'
 import { useHost, useSession } from '@/application/hooks'
 import { useSessionStore } from '@/application/stores'
 import { hostRepository, sessionRepository } from '@/infrastructure/repositories'
+import { AddHostModal } from '@/presentation/components/sidebar'
 import type { Host } from '@/domain/entities'
 
 export function Dashboard() {
-  const { hosts, loadHosts }                    = useHost(hostRepository)
+  const { hosts, loadHosts, saveHost, deleteHost } = useHost(hostRepository)
   const { sessions }                             = useSessionStore()
   const { connectHost }                          = useSession(sessionRepository)
   const [quickConnect, setQuickConnect]          = useState('')
   const [quickConnecting, setQuickConnecting]    = useState(false)
   const [connectingId, setConnectingId]          = useState<string | null>(null)
+  const [editingHost, setEditingHost]            = useState<Host | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId]    = useState<string | null>(null)
 
   useEffect(() => { loadHosts() }, [loadHosts])
 
@@ -73,7 +76,13 @@ export function Dashboard() {
   /* Active session ids for status badges */
   const connectedHostIds = new Set(Array.from(sessions.values()).map((s) => s.hostId))
 
+  const handleDeleteHost = useCallback(async (id: string) => {
+    await deleteHost(id)
+    setConfirmDeleteId(null)
+  }, [deleteHost])
+
   return (
+    <>
     <div
       className="flex flex-col h-full overflow-y-auto"
       style={{ background: '#111317', padding: '0 24px 24px' }}
@@ -151,12 +160,27 @@ export function Dashboard() {
               host={host}
               isConnected={connectedHostIds.has(host.id)}
               isConnecting={connectingId === host.id}
+              confirmingDelete={confirmDeleteId === host.id}
               onConnect={handleConnectHost}
+              onEdit={(h) => setEditingHost(h)}
+              onDelete={(id) => setConfirmDeleteId(id)}
+              onDeleteConfirm={handleDeleteHost}
+              onDeleteCancel={() => setConfirmDeleteId(null)}
             />
           ))}
         </div>
       )}
     </div>
+
+    {editingHost !== null && (
+      <AddHostModal
+        isOpen
+        onClose={() => setEditingHost(null)}
+        onSave={async (host) => { await saveHost(host); setEditingHost(null) }}
+        editHost={editingHost}
+      />
+    )}
+    </>
   )
 }
 
@@ -165,23 +189,33 @@ function HostCard({
   host,
   isConnected,
   isConnecting,
+  confirmingDelete,
   onConnect,
+  onEdit,
+  onDelete,
+  onDeleteConfirm,
+  onDeleteCancel,
 }: {
   host: Host
   isConnected: boolean
   isConnecting: boolean
+  confirmingDelete: boolean
   onConnect: (host: Host) => void
+  onEdit: (host: Host) => void
+  onDelete: (id: string) => void
+  onDeleteConfirm: (id: string) => void
+  onDeleteCancel: () => void
 }) {
   return (
     <div
-      className="flex flex-col gap-3 p-4 rounded-lg transition-all duration-150 group"
+      className="relative flex flex-col gap-3 p-4 rounded-lg transition-all duration-150 group"
       style={{
         background: '#161a1e',
         border: `1px solid ${isConnected ? 'rgba(0,212,255,0.25)' : 'rgba(60,73,78,0.25)'}`,
         boxShadow: isConnected ? '0 0 0 1px rgba(0,212,255,0.08) inset' : 'none',
       }}
     >
-      {/* Top row: icon + status */}
+      {/* Top row: icon + status + actions */}
       <div className="flex items-start justify-between">
         <div
           className="flex items-center justify-center rounded"
@@ -192,17 +226,69 @@ function HostCard({
           </svg>
         </div>
 
-        {isConnected ? (
-          <span
-            className="text-[0.55rem] font-mono font-semibold tracking-widest px-1.5 py-0.5 rounded-sm"
-            style={{ background: 'rgba(74,222,128,0.12)', color: '#4ade80' }}
+        <div className="flex items-center gap-1">
+          {isConnected ? (
+            <span
+              className="text-[0.55rem] font-mono font-semibold tracking-widest px-1.5 py-0.5 rounded-sm"
+              style={{ background: 'rgba(74,222,128,0.12)', color: '#4ade80' }}
+            >
+              CONNECTED
+            </span>
+          ) : (
+            <AuthBadge method={host.authMethod} />
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); onEdit(host) }}
+            className="p-1 rounded transition-all hover:bg-white/10"
+            title="Edit"
           >
-            CONNECTED
-          </span>
-        ) : (
-          <AuthBadge method={host.authMethod} />
-        )}
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8a9bb0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(host.id) }}
+            className="p-1 rounded transition-all hover:bg-red-500/10"
+            title="Delete"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+              <path d="M10 11v6" /><path d="M14 11v6" />
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+            </svg>
+          </button>
+        </div>
       </div>
+
+      {/* Delete confirm overlay */}
+      {confirmingDelete && (
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-lg"
+          style={{ background: 'rgba(12,14,17,0.92)', backdropFilter: 'blur(2px)', zIndex: 10 }}
+        >
+          <p className="text-[0.6875rem] text-center" style={{ color: '#fca5a5', fontFamily: "'Inter', sans-serif" }}>
+            Delete <strong>{host.label}</strong>?
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => onDeleteCancel()}
+              className="px-3 py-1 rounded text-[0.6rem] font-semibold transition-colors"
+              style={{ background: '#1d2126', color: '#8a9bb0', border: '1px solid #3c494e' }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => onDeleteConfirm(host.id)}
+              className="px-3 py-1 rounded text-[0.6rem] font-semibold transition-colors"
+              style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Host info */}
       <div className="flex-1 min-w-0">

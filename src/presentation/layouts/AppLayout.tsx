@@ -2,11 +2,12 @@ import type { ReactNode, CSSProperties } from 'react'
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { useHostStore, useSessionStore, useUIStore, useSettingsStore, useTerminalStore } from '@/application/stores'
-import { useHost, useSession, useAIAgent } from '@/application/hooks'
-import { hostRepository, sessionRepository } from '@/infrastructure/repositories'
+import { useHost, useSession, useAIAgent, useVault } from '@/application/hooks'
+import { hostRepository, sessionRepository, vaultRepository } from '@/infrastructure/repositories'
 import { AddHostModal } from '@/presentation/components/sidebar'
 import { AIPanel } from '@/presentation/components/ai'
 import { Button, Modal } from '@/presentation/shared'
+import { Vault } from '@/presentation/pages'
 import { APP_NAME } from '@/config'
 import type { Host, AIRule } from '@/domain/entities'
 
@@ -16,12 +17,13 @@ interface AppLayoutProps {
 
 /** Navigation items (dashboard mode) */
 const NAV_ITEMS = [
+  { id: 'connections', label: 'CONNECTIONS', icon: 'folder' },
   { id: 'vault', label: 'VAULT', icon: 'lock' },
 ] as const
 
 export function AppLayout({ children }: AppLayoutProps) {
   const [isAddHostOpen, setIsAddHostOpen] = useState(false)
-  const [activeNav, setActiveNav]         = useState<string | null>(null)
+  const [activeNav, setActiveNav]         = useState<string>('connections')
 
   // Connection state
   const [connectError, setConnectError]         = useState<string | null>(null)
@@ -70,6 +72,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { loadApiKey, isApiKeyLoaded } = useSettingsStore()
   const { hosts, saveHost } = useHost(hostRepository)
   const { connectHost, disconnectSession } = useSession(sessionRepository)
+  const { loadVault } = useVault(vaultRepository)
 
   const handleUpdateHostRules = useCallback(
     (rules: AIRule[]) => {
@@ -97,7 +100,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         await connectHost(host)
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
-        const debug = `[${host.username}@${host.hostname}:${host.port} auth=${host.authMethod}${host.privateKeyPath ? ' key=' + host.privateKeyPath : ''}${host.password ? ' pw=***' : ''}]`
+        const debug = `[${host.username}@${host.hostname}:${host.port} auth=${host.authMethod}${host.vaultEntryId ? ' vault=' + host.vaultEntryId : ''}${host.password ? ' pw=***' : ''}]`
         setConnectError(`${msg}\n${debug}`)
         if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
         errorTimerRef.current = setTimeout(() => setConnectError(null), 10000)
@@ -125,6 +128,11 @@ export function AppLayout({ children }: AppLayoutProps) {
       loadApiKey()
     }
   }, [isApiKeyLoaded, loadApiKey])
+
+  // Pre-load vault entries so host form can list available keys
+  useEffect(() => {
+    loadVault()
+  }, [loadVault])
 
 
 
@@ -298,7 +306,9 @@ export function AppLayout({ children }: AppLayoutProps) {
                   <StatusChip style={{ color: '#a8e8ff' }}>IDLE</StatusChip>
                 </div>
               </aside>
-              <div className="flex-1 min-w-0" style={{ background: '#111317' }}>{children}</div>
+              <div className="flex-1 min-w-0" style={{ background: '#111317' }}>
+                {activeNav === 'vault' ? <Vault /> : children}
+              </div>
             </>
           ) : (
             /* Active session view: content + AI panel, no sidebar */
@@ -465,7 +475,9 @@ export function AppLayout({ children }: AppLayoutProps) {
         </aside>
 
         {/* Main content */}
-        <div className="flex-1 min-w-0" style={{ background: '#111317' }}>{children}</div>
+        <div className="flex-1 min-w-0" style={{ background: '#111317' }}>
+          {activeNav === 'vault' ? <Vault /> : children}
+        </div>
       </div>
 
       <AddHostModal

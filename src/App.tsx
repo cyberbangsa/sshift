@@ -1,7 +1,5 @@
-import { RouterProvider } from '@tanstack/react-router'
 import { useState, useCallback, Component } from 'react'
 import type { ReactNode } from 'react'
-import { router } from './router'
 import { AppLayout } from '@/presentation/layouts'
 import { Dashboard, Settings } from '@/presentation/pages'
 import { ActiveSession } from '@/presentation/pages/ActiveSession'
@@ -69,7 +67,7 @@ function AppContent() {
           zIndex: activeSessionId === null ? 1 : 0,
         }}
       >
-        <RouterProvider router={router} defaultComponent={Dashboard} />
+        <Dashboard />
       </div>
 
       {/* Sessions — all kept mounted so terminals preserve history */}
