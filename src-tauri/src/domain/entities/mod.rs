@@ -26,6 +26,10 @@ pub struct Host {
     /// Never persisted.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub public_key_path: Option<String>,
+    /// Passphrase for the private key, supplied by the user at connect time.
+    /// Never persisted to disk; lives in memory only for the duration of the connection.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub key_passphrase: Option<String>,
     pub tags: Vec<String>,
     pub created_at: DateTime<Utc>,
 }

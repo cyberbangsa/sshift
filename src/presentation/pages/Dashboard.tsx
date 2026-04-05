@@ -2,8 +2,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { useHost, useSession } from '@/application/hooks'
 import { useSessionStore } from '@/application/stores'
 import { hostRepository, sessionRepository } from '@/infrastructure/repositories'
+import { passphraseCache } from '@/infrastructure/passphraseCache'
 import { AddHostModal } from '@/presentation/components/sidebar'
-import { Toast, formatSshError } from '@/presentation/shared'
+import { PassphraseModal } from '@/presentation/components/terminal'
+import { Toast, formatSshError, isPassphraseError } from '@/presentation/shared'
 import type { Host } from '@/domain/entities'
 
 export function Dashboard() {
@@ -16,6 +18,8 @@ export function Dashboard() {
   const [editingHost, setEditingHost]            = useState<Host | null>(null)
   const [confirmDeleteId, setConfirmDeleteId]    = useState<string | null>(null)
   const [connectError, setConnectError]          = useState<string | null>(null)
+  const [passphraseHost, setPassphraseHost]      = useState<Host | null>(null)
+  const [passphraseConnecting, setPassphraseConnecting] = useState(false)
 
   useEffect(() => { loadHosts() }, [loadHosts])
 
@@ -56,11 +60,16 @@ export function Dashboard() {
     try {
       setQuickConnecting(true)
       setConnectError(null)
-      await connectHost(host)
+      const cachedPassphrase = host.vaultEntryId ? passphraseCache.get(host.vaultEntryId) : undefined
+      await connectHost(cachedPassphrase ? { ...host, keyPassphrase: cachedPassphrase } : host)
     } catch (err) {
       console.error('[Dashboard] quick-connect failed:', err)
-      const raw = err instanceof Error ? err.message : typeof err === 'string' ? err : 'Connection failed'
-      setConnectError(formatSshError(raw))
+      const rawErr = err instanceof Error ? err.message : typeof err === 'string' ? err : 'Connection failed'
+      if (isPassphraseError(rawErr)) {
+        setPassphraseHost(host)
+      } else {
+        setConnectError(formatSshError(rawErr))
+      }
     } finally {
       setQuickConnecting(false)
     }
@@ -71,15 +80,48 @@ export function Dashboard() {
     try {
       setConnectingId(host.id)
       setConnectError(null)
-      await connectHost(host)
+      const cachedPassphrase = host.vaultEntryId ? passphraseCache.get(host.vaultEntryId) : undefined
+      await connectHost(cachedPassphrase ? { ...host, keyPassphrase: cachedPassphrase } : host)
     } catch (err) {
       console.error('[Dashboard] connect failed:', err)
-      const raw = err instanceof Error ? err.message : typeof err === 'string' ? err : 'Connection failed'
-      setConnectError(formatSshError(raw))
+      const rawErr = err instanceof Error ? err.message : typeof err === 'string' ? err : 'Connection failed'
+      if (isPassphraseError(rawErr)) {
+        setPassphraseHost(host)
+      } else {
+        setConnectError(formatSshError(rawErr))
+      }
     } finally {
       setConnectingId(null)
     }
   }, [connectHost])
+
+  /* ── Passphrase submit ─────────────────────────────────────── */
+  const handlePassphraseSubmit = useCallback(async (passphrase: string) => {
+    if (!passphraseHost) return
+    const host = passphraseHost
+    // Cache so subsequent connects don't re-prompt
+    if (host.vaultEntryId) passphraseCache.set(host.vaultEntryId, passphrase)
+    setPassphraseHost(null)
+    try {
+      setPassphraseConnecting(true)
+      setConnectingId(host.id)
+      setConnectError(null)
+      await connectHost({ ...host, keyPassphrase: passphrase })
+    } catch (err) {
+      console.error('[Dashboard] passphrase connect failed:', err)
+      const rawErr = err instanceof Error ? err.message : typeof err === 'string' ? err : 'Connection failed'
+      // Clear bad cached passphrase so next attempt re-prompts
+      if (host.vaultEntryId && isPassphraseError(rawErr)) {
+        passphraseCache.clear(host.vaultEntryId)
+        setConnectError('Incorrect passphrase. Please try connecting again.')
+      } else {
+        setConnectError(formatSshError(rawErr))
+      }
+    } finally {
+      setPassphraseConnecting(false)
+      setConnectingId(null)
+    }
+  }, [passphraseHost, connectHost])
 
   /* Active session ids for status badges */
   const connectedHostIds = new Set(Array.from(sessions.values()).map((s) => s.hostId))
@@ -193,6 +235,15 @@ export function Dashboard() {
         message={connectError}
         type="error"
         onDismiss={() => setConnectError(null)}
+      />
+    )}
+    {passphraseHost && (
+      <PassphraseModal
+        hostname={passphraseHost.hostname}
+        username={passphraseHost.username}
+        isConnecting={passphraseConnecting}
+        onConfirm={handlePassphraseSubmit}
+        onCancel={() => setPassphraseHost(null)}
       />
     )}
     </>

@@ -1,4 +1,13 @@
 /**
+ * Returns true when the raw error string indicates the private key is
+ * passphrase-protected and the passphrase was not supplied (or was wrong).
+ * libssh2 reports this as "Callback returned error" with session code -19.
+ */
+export function isPassphraseError(raw: string): boolean {
+  return /callback returned error/i.test(raw)
+}
+
+/**
  * Transforms raw SSH/Tauri error strings into short, human-readable messages.
  * Raw messages come from libssh2 via the Rust backend and look like:
  *   "Authentication failed: Auth failed for 'user': [Session(-19)] Callback returned error"

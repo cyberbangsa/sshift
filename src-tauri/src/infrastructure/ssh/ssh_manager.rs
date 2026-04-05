@@ -234,7 +234,8 @@ fn connection_thread(
             }
             Some(path) => {
                 let pub_key = host.public_key_path.as_deref().map(Path::new);
-                ssh.userauth_pubkey_file(&host.username, pub_key, Path::new(path), None)
+                let passphrase = host.key_passphrase.as_deref();
+                ssh.userauth_pubkey_file(&host.username, pub_key, Path::new(path), passphrase)
             }
         },
     };

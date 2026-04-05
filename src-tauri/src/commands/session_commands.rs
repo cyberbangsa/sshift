@@ -25,6 +25,7 @@ pub async fn connect_session(
     public_key_vault_entry_id: Option<String>,
     private_key_path: Option<String>,
     password: Option<String>,
+    key_passphrase: Option<String>,
 ) -> Result<Session, String> {
     // Resolve private vault entry → absolute key file path.
     let resolved_key_path: Option<String> = if let Some(ref vid) = vault_entry_id {
@@ -59,6 +60,7 @@ pub async fn connect_session(
         auth_method,
         private_key_path: resolved_key_path,
         public_key_path: resolved_pub_key_path,
+        key_passphrase,
         vault_entry_id: None,          // already resolved above
         public_key_vault_entry_id: None,
         tags: Vec::new(),
