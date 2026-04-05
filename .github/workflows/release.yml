@@ -1,0 +1,137 @@
+name: Release
+
+# Triggered when dev is merged into main.
+# Bumps the patch version across all version files, commits & tags the change,
+# then builds the Tauri app on all three platforms and publishes a GitHub release.
+
+on:
+  push:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # 1. Bump version and create the git tag
+  # ─────────────────────────────────────────────────────────────
+  bump-version:
+    name: Bump Version
+    runs-on: [self-hosted, linux]
+    permissions:
+      contents: write
+    outputs:
+      new_version: ${{ steps.bump.outputs.new_version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Use a PAT so the version-bump commit can trigger downstream workflows
+          # if needed. Falls back to GITHUB_TOKEN (push won't re-trigger this
+          # workflow because it's the same branch).
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Configure Git
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump patch version
+        id: bump
+        run: |
+          # Bump package.json (patch: 0.1.0 → 0.1.1)
+          npm version patch --no-git-tag-version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "new_version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+
+          # Update src-tauri/Cargo.toml — replace only the [package] version
+          # (the first `version = ` line in the file)
+          sed -i "0,/^version = \".*\"$/s//version = \"${NEW_VERSION}\"/" src-tauri/Cargo.toml
+
+          # Update src-tauri/tauri.conf.json
+          node -e "
+            const fs = require('fs');
+            const conf = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json', 'utf8'));
+            conf.version = '${NEW_VERSION}';
+            fs.writeFileSync('src-tauri/tauri.conf.json', JSON.stringify(conf, null, 2) + '\n');
+          "
+
+      - name: Commit & tag version bump
+        run: |
+          git add package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json
+          git commit -m "chore: bump version to v${{ steps.bump.outputs.new_version }}"
+          git tag "v${{ steps.bump.outputs.new_version }}"
+          git push origin main --follow-tags
+
+  # ─────────────────────────────────────────────────────────────
+  # 2. Build the app on all platforms and publish the release
+  #    Runs in parallel after the version bump tag is pushed.
+  # ─────────────────────────────────────────────────────────────
+  build-and-release:
+    name: Build & Release (${{ matrix.platform }})
+    needs: bump-version
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            os: linux
+            target: x86_64-unknown-linux-gnu
+          - platform: macOS
+            os: macos
+            target: aarch64-apple-darwin
+          - platform: windows
+            os: windows
+            target: x86_64-pc-windows-msvc
+
+    runs-on: [self-hosted, '${{ matrix.os }}']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Check out the version-bump commit that was just pushed
+          ref: v${{ needs.bump-version.outputs.new_version }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install Linux system dependencies
+        if: matrix.os == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev libappindicator3-dev \
+            librsvg2-dev patchelf libssh2-1-dev libssl-dev pkg-config
+
+      - name: Build & publish release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v${{ needs.bump-version.outputs.new_version }}
+          releaseName: 'SSHift v${{ needs.bump-version.outputs.new_version }}'
+          releaseBody: 'See the assets to download and install this version.'
+          releaseDraft: false
+          prerelease: false
+          args: --target ${{ matrix.target }}

@@ -1,29 +1,9 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import type { Host, AIRule } from '@/domain/entities'
 import { Modal, Input, Button } from '@/presentation/shared'
 import { DEFAULT_SSH_PORT } from '@/config'
 import { HostRulesPanel } from '@/presentation/components/ai/HostRulesPanel'
-
-/** Opens a native Tauri file picker, returns 'use-file-input' when not in Tauri. */
-async function pickKeyFile(): Promise<string | null | 'use-file-input'> {
-  // Only attempt Tauri dialog when the Tauri IPC bridge is present
-  if (typeof window === 'undefined' || !(window as Record<string, unknown>)['__TAURI_INTERNALS__']) {
-    return 'use-file-input'
-  }
-  try {
-    const { open } = await import('@tauri-apps/plugin-dialog')
-    const selected = await open({
-      title: 'Select Private Key',
-      multiple: false,
-      filters: [
-        { name: 'Private Key', extensions: ['pem', 'ppk', 'key', 'rsa', 'ed25519', '*'] },
-      ],
-    })
-    return typeof selected === 'string' ? selected : null
-  } catch {
-    return 'use-file-input'
-  }
-}
+import { useVaultStore } from '@/application/stores'
 
 interface AddHostModalProps {
   isOpen: boolean
@@ -40,6 +20,10 @@ interface FormErrors {
 }
 
 export function AddHostModal({ isOpen, onClose, onSave, editHost }: AddHostModalProps) {
+  const { entries: vaultEntries } = useVaultStore()
+  const privateKeyEntries = vaultEntries.filter((e) => e.type === 'privateKey')
+  const publicKeyEntries  = vaultEntries.filter((e) => e.type === 'publicKey')
+
   const [label, setLabel] = useState(editHost?.label ?? '')
   const [hostname, setHostname] = useState(editHost?.hostname ?? '')
   const [port, setPort] = useState(String(editHost?.port ?? DEFAULT_SSH_PORT))
@@ -47,36 +31,14 @@ export function AddHostModal({ isOpen, onClose, onSave, editHost }: AddHostModal
   const [authMethod, setAuthMethod] = useState<'password' | 'privateKey'>(
     editHost?.authMethod ?? 'password',
   )
-  const [privateKeyPath, setPrivateKeyPath] = useState(editHost?.privateKeyPath ?? '')
-  const [password, setPassword]             = useState(editHost?.password ?? '')
-  const [showPassword, setShowPassword]     = useState(false)
+  const [vaultEntryId, setVaultEntryId] = useState(editHost?.vaultEntryId ?? '')
+  const [publicKeyVaultEntryId, setPublicKeyVaultEntryId] = useState(editHost?.publicKeyVaultEntryId ?? '')
+  const [password, setPassword]         = useState(editHost?.password ?? '')
+  const [showPassword, setShowPassword] = useState(false)
   const [tags, setTags] = useState(editHost?.tags.join(', ') ?? '')
   const [aiRules, setAiRules] = useState<AIRule[]>(editHost?.aiRules ?? [])
   const [activeTab, setActiveTab] = useState<'connection' | 'rules'>('connection')
   const [errors, setErrors] = useState<FormErrors>({})
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const handleBrowseKey = async () => {
-    const result = await pickKeyFile()
-    if (result === 'use-file-input') {
-      // Browser fallback: trigger hidden file input
-      fileInputRef.current?.click()
-    } else if (result !== null) {
-      // Tauri: got a real absolute path
-      setPrivateKeyPath(result)
-    }
-    // result === null means user cancelled the Tauri dialog — do nothing
-  }
-
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) setPrivateKeyPath(file.name)
-  }
-
-  /** Derive a short display name from the full path */
-  const keyDisplayName = privateKeyPath
-    ? privateKeyPath.replace(/\\/g, '/').split('/').pop() ?? privateKeyPath
-    : ''
 
   const validate = (): boolean => {
     const newErrors: FormErrors = {}
@@ -102,7 +64,8 @@ export function AddHostModal({ isOpen, onClose, onSave, editHost }: AddHostModal
       username: username.trim(),
       authMethod,
       password: authMethod === 'password' && password.trim() ? password.trim() : undefined,
-      privateKeyPath: authMethod === 'privateKey' ? privateKeyPath.trim() : undefined,
+      vaultEntryId: authMethod === 'privateKey' && vaultEntryId ? vaultEntryId : undefined,
+      publicKeyVaultEntryId: authMethod === 'privateKey' && publicKeyVaultEntryId ? publicKeyVaultEntryId : undefined,
       tags: tags
         .split(',')
         .map((t) => t.trim())
@@ -203,71 +166,99 @@ export function AddHostModal({ isOpen, onClose, onSave, editHost }: AddHostModal
         )}
 
         {authMethod === 'privateKey' && (
+          <>
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" style={{ color: '#8a9bb0' }}>
-              Private Key
-            </label>
-            {/* Hidden browser fallback */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pem,.ppk,.key,.rsa,.ed25519"
-              className="hidden"
-              onChange={handleFileInputChange}
-            />
-            <div className="flex items-center gap-2">
-              {/* Path display */}
-              <div
-                className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded overflow-hidden"
-                style={{ background: '#1d2126', border: '1px solid #3c494e' }}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a8e8ff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                  <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-                </svg>
-                {keyDisplayName ? (
-                  <span
-                    className="text-[0.6875rem] truncate"
-                    style={{ fontFamily: "'JetBrains Mono', monospace", color: '#e2e2e6' }}
-                    title={privateKeyPath}
-                  >
-                    {keyDisplayName}
-                  </span>
-                ) : (
-                  <span
-                    className="text-[0.6875rem]"
-                    style={{ fontFamily: "'JetBrains Mono', monospace", color: '#56687a' }}
-                  >
-                    No key selected…
-                  </span>
-                )}
-                {keyDisplayName && (
-                  <button
-                    onClick={() => setPrivateKeyPath('')}
-                    className="ml-auto shrink-0 opacity-50 hover:opacity-100 transition-opacity"
-                    title="Clear"
-                  >
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#8a9bb0" strokeWidth="2.5" strokeLinecap="round">
-                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-              {/* Browse button */}
+            <div className="flex items-center justify-between">
+              <label className="text-[0.6875rem] font-medium" style={{ color: '#8a9bb0', fontFamily: "'Inter', sans-serif" }}>
+                Private Key (from Vault)
+              </label>
               <button
-                onClick={handleBrowseKey}
-                className="shrink-0 px-3 py-1.5 rounded text-[0.6875rem] font-semibold transition-opacity hover:opacity-90"
-                style={{
-                  background: 'linear-gradient(135deg, #a8e8ff, #00d4ff)',
-                  color: '#0c0e11',
-                  borderRadius: '4px',
-                  fontFamily: "'Inter', sans-serif",
-                  letterSpacing: '0.05em',
-                }}
+                type="button"
+                onClick={onClose}
+                className="text-[0.625rem] transition-opacity hover:opacity-70"
+                style={{ color: '#a8e8ff', fontFamily: "'Inter', sans-serif" }}
               >
-                Browse…
+                Manage Vault →
               </button>
             </div>
+            {privateKeyEntries.length === 0 ? (
+              <div
+                className="flex items-center gap-2 px-3 py-2 rounded"
+                style={{ background: '#1d2126', border: '1px dashed #3c494e' }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#56687a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                <span className="text-[0.6875rem]" style={{ color: '#56687a', fontFamily: "'Inter', sans-serif" }}>
+                  No private keys in vault —{' '}
+                  <button
+                    type="button"
+                    className="underline transition-opacity hover:opacity-70"
+                    style={{ color: '#a8e8ff' }}
+                    onClick={onClose}
+                  >
+                    add one first
+                  </button>
+                </span>
+              </div>
+            ) : (
+              <select
+                value={vaultEntryId}
+                onChange={(e) => setVaultEntryId(e.target.value)}
+                className="rounded px-3 py-1.5 text-[0.6875rem] text-text-primary w-full"
+                style={{
+                  background: '#1d2126',
+                  border: '1px solid #3c494e',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  color: vaultEntryId ? '#e2e2e6' : '#56687a',
+                }}
+              >
+                <option value="">Select a key from vault…</option>
+                {privateKeyEntries.map((e) => (
+                  <option key={e.id} value={e.id}>{e.name}</option>
+                ))}
+              </select>
+            )}
           </div>
+
+          {/* Public key — optional, shown when privateKey auth is selected */}
+          <div className="flex flex-col gap-1">
+            <label className="text-[0.6875rem] font-medium" style={{ color: '#8a9bb0', fontFamily: "'Inter', sans-serif" }}>
+              Public Key <span style={{ color: '#56687a' }}>(optional, from Vault)</span>
+            </label>
+            {publicKeyEntries.length === 0 ? (
+              <div
+                className="flex items-center gap-2 px-3 py-2 rounded"
+                style={{ background: '#1d2126', border: '1px dashed #3c494e' }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#56687a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 13V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7" /><path d="M4 17h16" /><path d="M9 21h6" /><path d="M12 17v4" />
+                </svg>
+                <span className="text-[0.6875rem]" style={{ color: '#56687a', fontFamily: "'Inter', sans-serif" }}>
+                  No public keys in vault
+                </span>
+              </div>
+            ) : (
+              <select
+                value={publicKeyVaultEntryId}
+                onChange={(e) => setPublicKeyVaultEntryId(e.target.value)}
+                className="rounded px-3 py-1.5 text-[0.6875rem] text-text-primary w-full"
+                style={{
+                  background: '#1d2126',
+                  border: '1px solid #3c494e',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  color: publicKeyVaultEntryId ? '#e2e2e6' : '#56687a',
+                }}
+              >
+                <option value="">None (derive from private key)</option>
+                {publicKeyEntries.map((e) => (
+                  <option key={e.id} value={e.id}>{e.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
+          </>
         )}
 
         <Input label="Tags (comma-separated)" value={tags} onChange={setTags} placeholder="production, web" />

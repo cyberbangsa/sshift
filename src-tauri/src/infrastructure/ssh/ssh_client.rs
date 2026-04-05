@@ -51,8 +51,9 @@ impl SessionRepository for SshClient {
                             "Private key path not provided".to_string(),
                         )
                     })?;
+                let pub_key = host.public_key_path.as_deref().map(std::path::Path::new);
                 ssh_session
-                    .userauth_pubkey_file(&host.username, None, std::path::Path::new(key_path), None)
+                    .userauth_pubkey_file(&host.username, pub_key, std::path::Path::new(key_path), None)
                     .map_err(|e| RepositoryError::AuthenticationFailed(e.to_string()))?;
             }
         }
