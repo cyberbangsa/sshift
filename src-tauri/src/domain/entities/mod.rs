@@ -18,6 +18,14 @@ pub struct Host {
     /// Persisted with the host; resolved to `private_key_path` before connecting.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub vault_entry_id: Option<String>,
+    /// Reference to a vault entry that holds the public key (optional, for cert-based auth).
+    /// Persisted with the host; resolved to `public_key_path` before connecting.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub public_key_vault_entry_id: Option<String>,
+    /// Resolved file-system path for the public key, populated at connection time.
+    /// Never persisted.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub public_key_path: Option<String>,
     pub tags: Vec<String>,
     pub created_at: DateTime<Utc>,
 }

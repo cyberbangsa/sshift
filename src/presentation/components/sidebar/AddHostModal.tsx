@@ -22,6 +22,7 @@ interface FormErrors {
 export function AddHostModal({ isOpen, onClose, onSave, editHost }: AddHostModalProps) {
   const { entries: vaultEntries } = useVaultStore()
   const privateKeyEntries = vaultEntries.filter((e) => e.type === 'privateKey')
+  const publicKeyEntries  = vaultEntries.filter((e) => e.type === 'publicKey')
 
   const [label, setLabel] = useState(editHost?.label ?? '')
   const [hostname, setHostname] = useState(editHost?.hostname ?? '')
@@ -31,6 +32,7 @@ export function AddHostModal({ isOpen, onClose, onSave, editHost }: AddHostModal
     editHost?.authMethod ?? 'password',
   )
   const [vaultEntryId, setVaultEntryId] = useState(editHost?.vaultEntryId ?? '')
+  const [publicKeyVaultEntryId, setPublicKeyVaultEntryId] = useState(editHost?.publicKeyVaultEntryId ?? '')
   const [password, setPassword]         = useState(editHost?.password ?? '')
   const [showPassword, setShowPassword] = useState(false)
   const [tags, setTags] = useState(editHost?.tags.join(', ') ?? '')
@@ -63,6 +65,7 @@ export function AddHostModal({ isOpen, onClose, onSave, editHost }: AddHostModal
       authMethod,
       password: authMethod === 'password' && password.trim() ? password.trim() : undefined,
       vaultEntryId: authMethod === 'privateKey' && vaultEntryId ? vaultEntryId : undefined,
+      publicKeyVaultEntryId: authMethod === 'privateKey' && publicKeyVaultEntryId ? publicKeyVaultEntryId : undefined,
       tags: tags
         .split(',')
         .map((t) => t.trim())
@@ -163,6 +166,7 @@ export function AddHostModal({ isOpen, onClose, onSave, editHost }: AddHostModal
         )}
 
         {authMethod === 'privateKey' && (
+          <>
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
               <label className="text-[0.6875rem] font-medium" style={{ color: '#8a9bb0', fontFamily: "'Inter', sans-serif" }}>
@@ -217,6 +221,44 @@ export function AddHostModal({ isOpen, onClose, onSave, editHost }: AddHostModal
               </select>
             )}
           </div>
+
+          {/* Public key — optional, shown when privateKey auth is selected */}
+          <div className="flex flex-col gap-1">
+            <label className="text-[0.6875rem] font-medium" style={{ color: '#8a9bb0', fontFamily: "'Inter', sans-serif" }}>
+              Public Key <span style={{ color: '#56687a' }}>(optional, from Vault)</span>
+            </label>
+            {publicKeyEntries.length === 0 ? (
+              <div
+                className="flex items-center gap-2 px-3 py-2 rounded"
+                style={{ background: '#1d2126', border: '1px dashed #3c494e' }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#56687a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 13V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7" /><path d="M4 17h16" /><path d="M9 21h6" /><path d="M12 17v4" />
+                </svg>
+                <span className="text-[0.6875rem]" style={{ color: '#56687a', fontFamily: "'Inter', sans-serif" }}>
+                  No public keys in vault
+                </span>
+              </div>
+            ) : (
+              <select
+                value={publicKeyVaultEntryId}
+                onChange={(e) => setPublicKeyVaultEntryId(e.target.value)}
+                className="rounded px-3 py-1.5 text-[0.6875rem] text-text-primary w-full"
+                style={{
+                  background: '#1d2126',
+                  border: '1px solid #3c494e',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  color: publicKeyVaultEntryId ? '#e2e2e6' : '#56687a',
+                }}
+              >
+                <option value="">None (derive from private key)</option>
+                {publicKeyEntries.map((e) => (
+                  <option key={e.id} value={e.id}>{e.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
+          </>
         )}
 
         <Input label="Tags (comma-separated)" value={tags} onChange={setTags} placeholder="production, web" />

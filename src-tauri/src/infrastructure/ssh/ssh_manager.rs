@@ -233,7 +233,8 @@ fn connection_thread(
                 return;
             }
             Some(path) => {
-                ssh.userauth_pubkey_file(&host.username, None, Path::new(path), None)
+                let pub_key = host.public_key_path.as_deref().map(Path::new);
+                ssh.userauth_pubkey_file(&host.username, pub_key, Path::new(path), None)
             }
         },
     };

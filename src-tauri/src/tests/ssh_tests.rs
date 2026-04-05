@@ -13,6 +13,9 @@ fn test_host() -> Host {
         username: "testuser".to_string(),
         auth_method: AuthMethod::Password,
         private_key_path: None,
+        public_key_vault_entry_id: None,
+        public_key_path: None,
+        vault_entry_id: None,
         tags: vec!["test".to_string()],
         created_at: Utc::now(),
     }

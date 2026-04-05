@@ -13,6 +13,7 @@ export class TauriSessionRepository implements ISessionRepository {
       username: host.username,
       authMethod: host.authMethod,
       vaultEntryId: host.vaultEntryId,
+      publicKeyVaultEntryId: host.publicKeyVaultEntryId,
       privateKeyPath: host.privateKeyPath,
       password: host.password ? '***' : undefined,
     }
@@ -29,6 +30,7 @@ export class TauriSessionRepository implements ISessionRepository {
       username: host.username,
       authMethod: host.authMethod,
       vaultEntryId: host.vaultEntryId,
+      publicKeyVaultEntryId: host.publicKeyVaultEntryId,
       privateKeyPath: host.privateKeyPath,
       password: host.password,
     })
