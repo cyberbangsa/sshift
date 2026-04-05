@@ -1,11 +1,16 @@
 <p align="center">
-  <img src="public/banner.png" alt="SSHift — SSH Management with AI" width="720" />
+  <img src="src-tauri/icons/128x128.png" alt="SSHift" width="100" />
 </p>
+
+<h1 align="center">SSHift</h1>
+<p align="center"><strong>SSH Management with AI</strong></p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-0.1.0-64ffda?style=flat-square" alt="Version" />
   <img src="https://img.shields.io/badge/license-MIT-64ffda?style=flat-square" alt="License" />
-  <img src="https://img.shields.io/badge/platform-macOS-0d1b2a?style=flat-square&logo=apple&logoColor=64ffda" alt="Platform" />
+  <img src="https://img.shields.io/badge/macOS-0d1b2a?style=flat-square&logo=apple&logoColor=64ffda" alt="macOS" />
+  <img src="https://img.shields.io/badge/Windows-0d1b2a?style=flat-square&logo=windows&logoColor=64ffda" alt="Windows" />
+  <img src="https://img.shields.io/badge/Linux-0d1b2a?style=flat-square&logo=linux&logoColor=64ffda" alt="Linux" />
   <img src="https://img.shields.io/badge/Tauri-2-0d1b2a?style=flat-square&logo=tauri&logoColor=64ffda" alt="Tauri" />
   <img src="https://img.shields.io/badge/React-19-0d1b2a?style=flat-square&logo=react&logoColor=64ffda" alt="React" />
 </p>
@@ -83,7 +88,7 @@ SSHift is a secure, AI-powered SSH client built with [Tauri](https://tauri.app) 
 
 - **Node.js** — latest LTS
 - **Rust** ≥ 1.77.2 — install via [rustup.rs](https://rustup.rs)
-- **Tauri system dependencies** — follow the [Tauri prerequisites guide](https://tauri.app/start/prerequisites/) for your OS
+- **Tauri system dependencies** — follow the [Tauri prerequisites guide](https://tauri.app/start/prerequisites/) for your OS (macOS, Windows, and Linux are all supported)
 - **OpenRouter API key** — obtain one at [openrouter.ai](https://openrouter.ai) and add it in the Settings page
 
 ---
