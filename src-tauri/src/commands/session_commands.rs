@@ -1,18 +1,6 @@
+use crate::commands::vault_commands::vault_dir;
 use crate::domain::entities::{AuthMethod, Host, Session};
 use crate::infrastructure::ssh::SshManager;
-use std::path::PathBuf;
-use tauri::Manager;
-
-/// Returns (and creates if necessary) the vault directory inside the app data dir.
-fn vault_dir(app_handle: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let app_dir = app_handle
-        .path()
-        .app_data_dir()
-        .map_err(|e| e.to_string())?;
-    let dir = app_dir.join("vault");
-    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    Ok(dir)
-}
 
 /// Connect to a host and open an interactive PTY shell.
 /// Output is streamed via Tauri events: `terminal-output:{sessionId}` and `terminal-closed:{sessionId}`.
