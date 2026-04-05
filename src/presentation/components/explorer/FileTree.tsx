@@ -1,5 +1,4 @@
 import type { FileEntry } from '@/domain/entities'
-import { Icon } from '@/presentation/shared'
 
 interface FileTreeProps {
   entries: FileEntry[]

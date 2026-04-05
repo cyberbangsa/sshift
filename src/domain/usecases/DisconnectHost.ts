@@ -2,7 +2,10 @@ import type { ISessionRepository } from '@/domain/repositories'
 
 /** Disconnects an active SSH session. */
 export class DisconnectHost {
-  constructor(private readonly sessionRepository: ISessionRepository) {}
+  private readonly sessionRepository: ISessionRepository
+  constructor(sessionRepository: ISessionRepository) {
+    this.sessionRepository = sessionRepository
+  }
 
   async execute(sessionId: string): Promise<void> {
     if (!sessionId) {

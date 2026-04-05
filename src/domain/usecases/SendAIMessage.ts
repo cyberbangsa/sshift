@@ -13,7 +13,10 @@ export class AIMessageError extends Error {
 
 /** Sends a user message to the AI assistant and returns the response. */
 export class SendAIMessage {
-  constructor(private readonly aiClient: IAIClient) { }
+  private readonly aiClient: IAIClient
+  constructor(aiClient: IAIClient) {
+    this.aiClient = aiClient
+  }
 
   async execute(history: AIMessage[], userMessage: string, signal?: AbortSignal): Promise<AIMessage> {
     if (!userMessage.trim()) {

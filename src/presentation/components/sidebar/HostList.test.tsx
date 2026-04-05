@@ -12,6 +12,7 @@ describe('HostList', () => {
     ],
     selectedHostId: null,
     connectedHostIds: [] as string[],
+    connectingHostId: null,
     onSelectHost: vi.fn(),
     onConnectHost: vi.fn(),
     onDeleteHost: vi.fn(),

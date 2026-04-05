@@ -33,7 +33,7 @@ vi.mock('@xterm/addon-web-links', () => {
 
 describe('TerminalPane', () => {
   it('should render a terminal container', () => {
-    render(<TerminalPane sessionId="test-session" onData={vi.fn()} />)
+    render(<TerminalPane sessionId="test-session" />)
 
     expect(screen.getByTestId('terminal-container')).toBeInTheDocument()
   })
@@ -41,7 +41,7 @@ describe('TerminalPane', () => {
   it('should mount xterm Terminal on render', async () => {
     const { Terminal } = await import('@xterm/xterm')
 
-    render(<TerminalPane sessionId="test-session" onData={vi.fn()} />)
+    render(<TerminalPane sessionId="test-session" />)
 
     expect(Terminal).toHaveBeenCalled()
   })

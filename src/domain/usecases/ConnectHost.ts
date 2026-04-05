@@ -2,15 +2,20 @@ import type { Host, Session } from '@/domain/entities'
 import type { ISessionRepository } from '@/domain/repositories'
 
 export class ConnectionError extends Error {
-  constructor(message: string, public readonly hostId: string) {
+  readonly hostId: string
+  constructor(message: string, hostId: string) {
     super(message)
     this.name = 'ConnectionError'
+    this.hostId = hostId
   }
 }
 
 /** Establishes an SSH session to a remote host. */
 export class ConnectHost {
-  constructor(private readonly sessionRepository: ISessionRepository) { }
+  private readonly sessionRepository: ISessionRepository
+  constructor(sessionRepository: ISessionRepository) {
+    this.sessionRepository = sessionRepository
+  }
 
   async execute(host: Host): Promise<Session> {
     if (!host.hostname || !host.username) {

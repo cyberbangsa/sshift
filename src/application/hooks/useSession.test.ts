@@ -20,9 +20,8 @@ describe('useSession', () => {
     const { result } = renderHook(() => useSession(repository))
     const host = createHost({ id: 'host-1' })
 
-    let session: unknown
     await act(async () => {
-      session = await result.current.connectHost(host)
+      await result.current.connectHost(host)
     })
 
     expect(result.current.sessions).toHaveLength(1)

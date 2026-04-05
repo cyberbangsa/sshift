@@ -3,7 +3,10 @@ import type { IFileRepository } from '@/domain/repositories'
 
 /** Lists the contents of a remote directory. */
 export class ListDirectory {
-  constructor(private readonly fileRepository: IFileRepository) {}
+  private readonly fileRepository: IFileRepository
+  constructor(fileRepository: IFileRepository) {
+    this.fileRepository = fileRepository
+  }
 
   async execute(sessionId: string, path: string): Promise<FileEntry[]> {
     const entries = await this.fileRepository.listDirectory(sessionId, path)

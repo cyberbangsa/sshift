@@ -8,7 +8,7 @@ import { useVaultStore } from '@/application/stores'
 /** Opens a native Tauri file picker, returns 'use-file-input' when not in Tauri. */
 async function pickKeyFile(): Promise<string | null | 'use-file-input'> {
   // Only attempt Tauri dialog when the Tauri IPC bridge is present
-  if (typeof window === 'undefined' || !(window as Record<string, unknown>)['__TAURI_INTERNALS__']) {
+  if (typeof window === 'undefined' || !(window as unknown as Record<string, unknown>)['__TAURI_INTERNALS__']) {
     return 'use-file-input'
   }
   try {

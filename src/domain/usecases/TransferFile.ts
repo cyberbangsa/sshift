@@ -2,15 +2,20 @@ import type { Transfer } from '@/domain/entities'
 import type { IFileRepository } from '@/domain/repositories'
 
 export class TransferError extends Error {
-  constructor(message: string, public readonly sessionId: string) {
+  readonly sessionId: string
+  constructor(message: string, sessionId: string) {
     super(message)
     this.name = 'TransferError'
+    this.sessionId = sessionId
   }
 }
 
 /** Initiates a file transfer (upload or download) between local and remote host. */
 export class TransferFile {
-  constructor(private readonly fileRepository: IFileRepository) {}
+  private readonly fileRepository: IFileRepository
+  constructor(fileRepository: IFileRepository) {
+    this.fileRepository = fileRepository
+  }
 
   async execute(
     sessionId: string,
