@@ -1,22 +1,18 @@
 name: CI
 
-# Runs on every pull request to dev (feature → dev) and main (dev → main).
-# Does NOT run on direct pushes — releases are handled by release.yml.
-
 on:
+  push:
+    branches: [main, develop]
   pull_request:
-    branches: [dev, main]
+    branches: [main]
 
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
 
 jobs:
-  # ─────────────────────────────────────────────────────────────
-  # Jobs that run on ALL pull requests (to dev and to main)
-  # ─────────────────────────────────────────────────────────────
-  lint-frontend:
-    name: Frontend Lint
+  lint-and-test-frontend:
+    name: Frontend Lint & Test
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
@@ -37,97 +33,12 @@ jobs:
       - name: TypeScript check
         run: npx tsc -b --noEmit
 
-  lint-rust:
-    name: Rust Lint (Clippy)
-    runs-on: [self-hosted, linux]
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - run: npm ci
-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev libappindicator3-dev \
-            librsvg2-dev patchelf libssh2-1-dev libssl-dev pkg-config
-
-      - name: Clippy
-        working-directory: src-tauri
-        run: cargo clippy -- -D warnings
-
-  # Lightweight compile check — catches broken builds before they reach dev.
-  build-check:
-    name: Build Check
-    runs-on: [self-hosted, linux]
-    needs: [lint-frontend, lint-rust]
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - run: npm ci
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev libappindicator3-dev \
-            librsvg2-dev patchelf libssh2-1-dev libssl-dev pkg-config
-
-      - name: Frontend build
-        run: npm run build
-
-      - name: Rust build check
-        working-directory: src-tauri
-        run: cargo check
-
-  # ─────────────────────────────────────────────────────────────
-  # Additional jobs that run ONLY on pull requests targeting main
-  # ─────────────────────────────────────────────────────────────
-  test-frontend:
-    name: Frontend Tests
-    runs-on: [self-hosted, linux]
-    if: github.base_ref == 'main'
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - run: npm ci
-
       - name: Unit tests
         run: npm run test
 
   test-rust:
     name: Rust Tests
     runs-on: [self-hosted, linux]
-    if: github.base_ref == 'main'
     steps:
       - uses: actions/checkout@v4
 
@@ -147,21 +58,35 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev libappindicator3-dev \
-            librsvg2-dev patchelf libssh2-1-dev libssl-dev pkg-config
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssh2-1-dev libssl-dev pkg-config
 
       - name: Rust tests
         working-directory: src-tauri
         run: cargo test
 
-  # Full Tauri build validation — only on PRs targeting main.
-  # Verifies the app bundles end-to-end without creating a release.
-  build-tauri:
-    name: Tauri Build Validation
-    runs-on: [self-hosted, linux]
-    if: github.base_ref == 'main'
-    needs: [build-check, test-frontend, test-rust]
+      - name: Rust clippy
+        working-directory: src-tauri
+        run: cargo clippy -- -D warnings
+
+  build:
+    name: Build (${{ matrix.platform }})
+    needs: [lint-and-test-frontend, test-rust]
+    if: startsWith(github.ref, 'refs/tags/v')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            os: linux
+            target: x86_64-unknown-linux-gnu
+          - platform: macOS
+            os: macos
+            target: aarch64-apple-darwin
+          - platform: windows
+            os: windows
+            target: x86_64-pc-windows-msvc
+
+    runs-on: [self-hosted, '${{ matrix.os }}']
     steps:
       - uses: actions/checkout@v4
 
@@ -174,22 +99,25 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: x86_64-unknown-linux-gnu
+          targets: ${{ matrix.target }}
 
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
 
-      - name: Install system dependencies
+      - name: Install Linux dependencies
+        if: matrix.os == 'linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev libappindicator3-dev \
-            librsvg2-dev patchelf libssh2-1-dev libssl-dev pkg-config
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssh2-1-dev libssl-dev pkg-config
 
-      - name: Build Tauri app (validation only — no release)
+      - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          args: --target x86_64-unknown-linux-gnu
+          tagName: ${{ github.ref_name }}
+          releaseName: 'SSHift ${{ github.ref_name }}'
+          releaseBody: 'See the assets to download and install this version.'
+          releaseDraft: true
+          prerelease: false
