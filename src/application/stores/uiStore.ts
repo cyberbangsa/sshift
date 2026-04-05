@@ -8,6 +8,7 @@ interface UIState {
   isExplorerVisible: boolean
   isAIPanelVisible: boolean
   isSettingsOpen: boolean
+  isCommandPaletteOpen: boolean
   activeTab: 'terminal' | 'explorer' | 'transfers'
 }
 
@@ -21,6 +22,8 @@ interface UIActions {
   openSettings: () => void
   closeSettings: () => void
   setActiveTab: (tab: UIState['activeTab']) => void
+  openCommandPalette: () => void
+  closeCommandPalette: () => void
 }
 
 export type UIStore = UIState & UIActions
@@ -33,6 +36,7 @@ export const useUIStore = create<UIStore>((set) => ({
   isExplorerVisible: true,
   isAIPanelVisible: false,
   isSettingsOpen: false,
+  isCommandPaletteOpen: false,
   activeTab: 'terminal',
   setSidebarWidth: (sidebarWidth) => set({ sidebarWidth }),
   setExplorerWidth: (explorerWidth) => set({ explorerWidth }),
@@ -46,4 +50,6 @@ export const useUIStore = create<UIStore>((set) => ({
   openSettings: () => set({ isSettingsOpen: true }),
   closeSettings: () => set({ isSettingsOpen: false }),
   setActiveTab: (activeTab) => set({ activeTab }),
+  openCommandPalette: () => set({ isCommandPaletteOpen: true }),
+  closeCommandPalette: () => set({ isCommandPaletteOpen: false }),
 }))
