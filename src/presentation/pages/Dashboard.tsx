@@ -12,8 +12,6 @@ export function Dashboard() {
   const { hosts, loadHosts, saveHost, deleteHost } = useHost(hostRepository)
   const { sessions }                             = useSessionStore()
   const { connectHost }                          = useSession(sessionRepository)
-  const [quickConnect, setQuickConnect]          = useState('')
-  const [quickConnecting, setQuickConnecting]    = useState(false)
   const [connectingId, setConnectingId]          = useState<string | null>(null)
   const [editingHost, setEditingHost]            = useState<Host | null>(null)
   const [confirmDeleteId, setConfirmDeleteId]    = useState<string | null>(null)
@@ -22,58 +20,6 @@ export function Dashboard() {
   const [passphraseConnecting, setPassphraseConnecting] = useState(false)
 
   useEffect(() => { loadHosts() }, [loadHosts])
-
-  /* ── Quick Connect ─────────────────────────────────────────── */
-  const handleQuickConnect = useCallback(async () => {
-    const raw = quickConnect.trim()
-    if (!raw) return
-
-    let username = ''
-    let hostname = raw
-    let port     = 22
-
-    if (raw.includes('@')) {
-      const [u, rest] = raw.split('@')
-      username = u
-      hostname = rest
-    }
-    if (hostname.includes(':')) {
-      const [h, p] = hostname.split(':')
-      hostname = h
-      port     = parseInt(p, 10) || 22
-    }
-
-    const existing = hosts.find(
-      (h) => h.hostname === hostname && (!username || h.username === username)
-    )
-    const host: Host = existing ?? {
-      id:         crypto.randomUUID(),
-      label:      hostname,
-      hostname,
-      port,
-      username:   username || 'root',
-      authMethod: 'password',
-      tags:       [],
-      createdAt:  new Date(),
-    }
-
-    try {
-      setQuickConnecting(true)
-      setConnectError(null)
-      const cachedPassphrase = host.vaultEntryId ? passphraseCache.get(host.vaultEntryId) : undefined
-      await connectHost(cachedPassphrase ? { ...host, keyPassphrase: cachedPassphrase } : host)
-    } catch (err) {
-      console.error('[Dashboard] quick-connect failed:', err)
-      const rawErr = err instanceof Error ? err.message : typeof err === 'string' ? err : 'Connection failed'
-      if (isPassphraseError(rawErr)) {
-        setPassphraseHost(host)
-      } else {
-        setConnectError(formatSshError(rawErr))
-      }
-    } finally {
-      setQuickConnecting(false)
-    }
-  }, [quickConnect, hosts, connectHost])
 
   /* ── Per-card connect ──────────────────────────────────────── */
   const handleConnectHost = useCallback(async (host: Host) => {
@@ -137,53 +83,8 @@ export function Dashboard() {
       className="flex flex-col h-full overflow-y-auto"
       style={{ background: '#111317', padding: '0 24px 24px' }}
     >
-      {/* ── Quick Connect bar ──────────────────────────────────── */}
-      <div className="pt-5 pb-5">
-        <div
-          className="flex items-center gap-3 px-4 py-2.5 rounded"
-          style={{ background: '#161a1e', border: '1px solid #1d2126' }}
-        >
-          <div className="flex items-center gap-2 shrink-0">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a9bb0" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="2" y="3" width="20" height="14" rx="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" />
-            </svg>
-            <span
-              className="text-[0.6875rem] font-semibold"
-              style={{ fontFamily: "'JetBrains Mono', monospace", color: '#8a9bb0' }}
-            >
-              ssh
-            </span>
-          </div>
-          <span style={{ color: '#252a30', fontSize: '1rem' }}>|</span>
-          <input
-            type="text"
-            placeholder="user@hostname:port"
-            value={quickConnect}
-            onChange={(e) => setQuickConnect(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleQuickConnect()}
-            className="flex-1 bg-transparent outline-none text-text-primary placeholder:text-text-muted"
-            style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.6875rem' }}
-          />
-          <button
-            disabled={quickConnecting || !quickConnect.trim()}
-            onClick={handleQuickConnect}
-            className="shrink-0 px-4 py-1.5 font-semibold tracking-widest transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{
-              background: 'linear-gradient(135deg, #a8e8ff, #00d4ff)',
-              color: '#0c0e11',
-              borderRadius: '4px',
-              fontSize: '0.6875rem',
-              fontFamily: "'Inter', sans-serif",
-              letterSpacing: '0.08em',
-            }}
-          >
-            {quickConnecting ? 'CONNECTING…' : 'CONNECT'}
-          </button>
-        </div>
-      </div>
-
       {/* ── Section header ─────────────────────────────────────── */}
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex items-center gap-3 pt-5 mb-4">
         <h2
           className="text-sm font-semibold shrink-0"
           style={{ fontFamily: "'Space Grotesk', sans-serif", color: '#e2e2e6' }}
