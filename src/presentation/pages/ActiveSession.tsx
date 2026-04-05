@@ -137,9 +137,23 @@ export function ActiveSession({ sessionId, onClosed }: ActiveSessionProps) {
       >
         {/* Connection */}
         <StatusItem>
-          <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#22c55e', display: 'inline-block' }} />
+          <span
+            className="w-1.5 h-1.5 rounded-full"
+            style={{
+              display: 'inline-block',
+              background:
+                activeSession?.status === 'connected'    ? '#22c55e' :
+                activeSession?.status === 'connecting'   ? '#f59e0b' :
+                activeSession?.status === 'error'        ? '#ff6b6b' :
+                                                           '#56687a',
+            }}
+          />
           <span style={{ color: '#a8e8ff' }}>
-            {activeHost?.label?.toUpperCase() ?? 'PRODUCTION DB'}
+            {(
+              activeHost?.label ||
+              (activeHost ? `${activeHost.username}@${activeHost.hostname}:${activeHost.port}` : null) ||
+              sessionId
+            ).toUpperCase()}
           </span>
         </StatusItem>
         <StatusSep />
@@ -148,7 +162,7 @@ export function ActiveSession({ sessionId, onClosed }: ActiveSessionProps) {
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#56687a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
           </svg>
-          <span>{activeSession?.latencyMs != null ? `${activeSession.latencyMs}ms` : '12ns'}</span>
+          <span>{activeSession?.latencyMs != null ? `${activeSession.latencyMs}ms` : '—'}</span>
         </StatusItem>
         <StatusSep />
         {/* Path */}
@@ -157,24 +171,28 @@ export function ActiveSession({ sessionId, onClosed }: ActiveSessionProps) {
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
           </svg>
           <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-            {activeSession?.currentPath ?? '~/'}
+            {activeSession?.currentPath || '~/'}
           </span>
-        </StatusItem>
-        <StatusSep />
-        {/* Bandwidth */}
-        <StatusItem>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#56687a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" />
-            <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
-          </svg>
-          <span>0 KB/s</span>
         </StatusItem>
         <StatusSep />
         <StatusItem><span>UTF-8</span></StatusItem>
         <StatusSep />
         <StatusItem><span>LF</span></StatusItem>
         <StatusSep />
-        <StatusItem><span style={{ color: '#22c55e' }}>STABLE</span></StatusItem>
+        <StatusItem>
+          <span
+            style={{
+              color:
+                activeSession?.status === 'connected'    ? '#22c55e' :
+                activeSession?.status === 'connecting'   ? '#f59e0b' :
+                activeSession?.status === 'error'        ? '#ff6b6b' :
+                activeSession?.status === 'disconnected' ? '#56687a' :
+                                                           '#56687a',
+            }}
+          >
+            {activeSession?.status?.toUpperCase() ?? 'NO SESSION'}
+          </span>
+        </StatusItem>
       </div>
     </div>
   )
