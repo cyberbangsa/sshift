@@ -3,6 +3,7 @@ import type { Host, AIRule } from '@/domain/entities'
 import { Modal, Input, Button } from '@/presentation/shared'
 import { DEFAULT_SSH_PORT } from '@/config'
 import { HostRulesPanel } from '@/presentation/components/ai/HostRulesPanel'
+import { useVaultStore } from '@/application/stores'
 
 /** Opens a native Tauri file picker, returns 'use-file-input' when not in Tauri. */
 async function pickKeyFile(): Promise<string | null | 'use-file-input'> {
@@ -47,6 +48,11 @@ export function AddHostModal({ isOpen, onClose, onSave, editHost }: AddHostModal
   const [authMethod, setAuthMethod] = useState<'password' | 'privateKey'>(
     editHost?.authMethod ?? 'password',
   )
+  // Key source: 'vault' = pick from vault, 'file' = browse raw path
+  const [keySource, setKeySource] = useState<'vault' | 'file'>(
+    editHost?.vaultEntryId ? 'vault' : 'file',
+  )
+  const [vaultEntryId, setVaultEntryId] = useState(editHost?.vaultEntryId ?? '')
   const [privateKeyPath, setPrivateKeyPath] = useState(editHost?.privateKeyPath ?? '')
   const [password, setPassword]             = useState(editHost?.password ?? '')
   const [showPassword, setShowPassword]     = useState(false)
@@ -55,6 +61,9 @@ export function AddHostModal({ isOpen, onClose, onSave, editHost }: AddHostModal
   const [activeTab, setActiveTab] = useState<'connection' | 'rules'>('connection')
   const [errors, setErrors] = useState<FormErrors>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const { entries: vaultEntries } = useVaultStore()
+  const privateKeyEntries = vaultEntries.filter((e) => e.type === 'privateKey')
 
   const handleBrowseKey = async () => {
     const result = await pickKeyFile()
@@ -102,7 +111,8 @@ export function AddHostModal({ isOpen, onClose, onSave, editHost }: AddHostModal
       username: username.trim(),
       authMethod,
       password: authMethod === 'password' && password.trim() ? password.trim() : undefined,
-      privateKeyPath: authMethod === 'privateKey' ? privateKeyPath.trim() : undefined,
+      vaultEntryId: authMethod === 'privateKey' && keySource === 'vault' && vaultEntryId ? vaultEntryId : undefined,
+      privateKeyPath: authMethod === 'privateKey' && keySource === 'file' ? privateKeyPath.trim() : undefined,
       tags: tags
         .split(',')
         .map((t) => t.trim())
@@ -203,70 +213,112 @@ export function AddHostModal({ isOpen, onClose, onSave, editHost }: AddHostModal
         )}
 
         {authMethod === 'privateKey' && (
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium" style={{ color: '#8a9bb0' }}>
-              Private Key
-            </label>
-            {/* Hidden browser fallback */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pem,.ppk,.key,.rsa,.ed25519"
-              className="hidden"
-              onChange={handleFileInputChange}
-            />
-            <div className="flex items-center gap-2">
-              {/* Path display */}
-              <div
-                className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded overflow-hidden"
-                style={{ background: '#1d2126', border: '1px solid #3c494e' }}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a8e8ff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                  <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-                </svg>
-                {keyDisplayName ? (
-                  <span
-                    className="text-[0.6875rem] truncate"
-                    style={{ fontFamily: "'JetBrains Mono', monospace", color: '#e2e2e6' }}
-                    title={privateKeyPath}
+          <div className="flex flex-col gap-2">
+            {/* Source toggle: Vault vs File */}
+            <div className="flex gap-0" style={{ borderBottom: '1px solid #1d2126' }}>
+              {(['vault', 'file'] as const).map((src) => (
+                <button
+                  key={src}
+                  type="button"
+                  onClick={() => setKeySource(src)}
+                  className="px-3 py-1 text-[0.6rem] font-semibold uppercase tracking-widest transition-colors"
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    color: keySource === src ? '#a8e8ff' : '#56687a',
+                    borderBottom: keySource === src ? '2px solid #a8e8ff' : '2px solid transparent',
+                    marginBottom: -1,
+                    background: 'transparent',
+                  }}
+                >
+                  {src === 'vault' ? '🔐 From Vault' : '📁 Browse File'}
+                </button>
+              ))}
+            </div>
+
+            {keySource === 'vault' ? (
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium" style={{ color: '#8a9bb0' }}>Vault Key</label>
+                {privateKeyEntries.length === 0 ? (
+                  <div
+                    className="px-3 py-2 rounded text-[0.6875rem]"
+                    style={{ background: '#1d2126', border: '1px solid #3c494e', color: '#56687a', fontFamily: "'Inter', sans-serif" }}
                   >
-                    {keyDisplayName}
-                  </span>
+                    No private keys in Vault — add one via the Vault tab.
+                  </div>
                 ) : (
-                  <span
-                    className="text-[0.6875rem]"
-                    style={{ fontFamily: "'JetBrains Mono', monospace", color: '#56687a' }}
+                  <select
+                    value={vaultEntryId}
+                    onChange={(e) => setVaultEntryId(e.target.value)}
+                    className="rounded px-3 py-1.5 text-[0.6875rem]"
+                    style={{ background: '#1d2126', border: `1px solid ${vaultEntryId ? '#a8e8ff55' : '#3c494e'}`, color: vaultEntryId ? '#e2e2e6' : '#56687a', fontFamily: "'JetBrains Mono', monospace" }}
                   >
-                    No key selected…
-                  </span>
-                )}
-                {keyDisplayName && (
-                  <button
-                    onClick={() => setPrivateKeyPath('')}
-                    className="ml-auto shrink-0 opacity-50 hover:opacity-100 transition-opacity"
-                    title="Clear"
-                  >
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#8a9bb0" strokeWidth="2.5" strokeLinecap="round">
-                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  </button>
+                    <option value="">Select a key…</option>
+                    {privateKeyEntries.map((e) => (
+                      <option key={e.id} value={e.id}>{e.name}</option>
+                    ))}
+                  </select>
                 )}
               </div>
-              {/* Browse button */}
-              <button
-                onClick={handleBrowseKey}
-                className="shrink-0 px-3 py-1.5 rounded text-[0.6875rem] font-semibold transition-opacity hover:opacity-90"
-                style={{
-                  background: 'linear-gradient(135deg, #a8e8ff, #00d4ff)',
-                  color: '#0c0e11',
-                  borderRadius: '4px',
-                  fontFamily: "'Inter', sans-serif",
-                  letterSpacing: '0.05em',
-                }}
-              >
-                Browse…
-              </button>
-            </div>
+            ) : (
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium" style={{ color: '#8a9bb0' }}>Private Key</label>
+                {/* Hidden browser fallback */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pem,.ppk,.key,.rsa,.ed25519"
+                  className="hidden"
+                  onChange={handleFileInputChange}
+                />
+                <div className="flex items-center gap-2">
+                  <div
+                    className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded overflow-hidden"
+                    style={{ background: '#1d2126', border: '1px solid #3c494e' }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a8e8ff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                      <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+                    </svg>
+                    {keyDisplayName ? (
+                      <span
+                        className="text-[0.6875rem] truncate"
+                        style={{ fontFamily: "'JetBrains Mono', monospace", color: '#e2e2e6' }}
+                        title={privateKeyPath}
+                      >
+                        {keyDisplayName}
+                      </span>
+                    ) : (
+                      <span className="text-[0.6875rem]" style={{ fontFamily: "'JetBrains Mono', monospace", color: '#56687a' }}>
+                        No key selected…
+                      </span>
+                    )}
+                    {keyDisplayName && (
+                      <button
+                        onClick={() => setPrivateKeyPath('')}
+                        className="ml-auto shrink-0 opacity-50 hover:opacity-100 transition-opacity"
+                        title="Clear"
+                      >
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#8a9bb0" strokeWidth="2.5" strokeLinecap="round">
+                          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleBrowseKey}
+                    className="shrink-0 px-3 py-1.5 rounded text-[0.6875rem] font-semibold transition-opacity hover:opacity-90"
+                    style={{
+                      background: 'linear-gradient(135deg, #a8e8ff, #00d4ff)',
+                      color: '#0c0e11',
+                      borderRadius: '4px',
+                      fontFamily: "'Inter', sans-serif",
+                      letterSpacing: '0.05em',
+                    }}
+                  >
+                    Browse…
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
