@@ -4,9 +4,11 @@ import { useAIAgent } from './useAIAgent'
 import { useAIStore, useSettingsStore } from '@/application/stores'
 import { DEFAULT_SETTINGS } from '@/domain/entities'
 
+const TEST_SESSION = 'test-session-1'
+
 describe('useAIAgent', () => {
   beforeEach(() => {
-    useAIStore.setState({ messages: [], isStreaming: false, error: null, executionMode: 'manual' })
+    useAIStore.setState({ sessions: new Map() })
     useSettingsStore.setState({
       settings: { ...DEFAULT_SETTINGS },
       openRouterApiKey: null,
@@ -21,7 +23,7 @@ describe('useAIAgent', () => {
   })
 
   it('should report error when no API key is configured', async () => {
-    const { result } = renderHook(() => useAIAgent())
+    const { result } = renderHook(() => useAIAgent(TEST_SESSION))
 
     await act(async () => {
       await result.current.sendMessage('Hello AI')
@@ -42,7 +44,7 @@ describe('useAIAgent', () => {
       new Response(JSON.stringify(mockResponse), { status: 200 }),
     )
 
-    const { result } = renderHook(() => useAIAgent())
+    const { result } = renderHook(() => useAIAgent(TEST_SESSION))
 
     await act(async () => {
       await result.current.sendMessage('Hello AI')
@@ -62,7 +64,7 @@ describe('useAIAgent', () => {
       new Response('Unauthorized', { status: 401 }),
     )
 
-    const { result } = renderHook(() => useAIAgent())
+    const { result } = renderHook(() => useAIAgent(TEST_SESSION))
 
     await act(async () => {
       await result.current.sendMessage('Hello')
@@ -80,7 +82,7 @@ describe('useAIAgent', () => {
     const pending = new Promise<Response>((r) => { resolveResponse = r })
     vi.spyOn(global, 'fetch').mockReturnValueOnce(pending)
 
-    const { result } = renderHook(() => useAIAgent())
+    const { result } = renderHook(() => useAIAgent(TEST_SESSION))
 
     const sendPromise = act(async () => {
       // do not await yet
@@ -101,7 +103,7 @@ describe('useAIAgent', () => {
       new Response(JSON.stringify({ choices: [{ message: { content: 'hi' } }] }), { status: 200 }),
     )
 
-    const { result } = renderHook(() => useAIAgent())
+    const { result } = renderHook(() => useAIAgent(TEST_SESSION))
 
     await act(async () => {
       await result.current.sendMessage('Hello')
@@ -113,6 +115,25 @@ describe('useAIAgent', () => {
     })
 
     expect(result.current.messages).toHaveLength(0)
+  })
+
+  it('should keep AI state isolated between different session IDs', async () => {
+    useSettingsStore.setState({ openRouterApiKey: 'sk-test-key' })
+
+    vi.spyOn(global, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ choices: [{ message: { content: 'reply for session 1' } }] }), { status: 200 }),
+    )
+
+    const { result: result1 } = renderHook(() => useAIAgent('session-1'))
+    const { result: result2 } = renderHook(() => useAIAgent('session-2'))
+
+    await act(async () => {
+      await result1.current.sendMessage('Message for session 1')
+    })
+
+    // session-1 should have messages; session-2 should still be empty
+    expect(result1.current.messages).toHaveLength(2)
+    expect(result2.current.messages).toHaveLength(0)
   })
 })
 

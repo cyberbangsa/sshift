@@ -1,7 +1,7 @@
 import type { ReactNode, CSSProperties } from 'react'
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { invoke } from '@tauri-apps/api/core'
-import { useHostStore, useSessionStore, useUIStore, useSettingsStore, useTerminalStore } from '@/application/stores'
+import { useHostStore, useSessionStore, useUIStore, useSettingsStore, useTerminalStore, useAIStore } from '@/application/stores'
 import { useHost, useSession, useAIAgent, useVault } from '@/application/hooks'
 import { hostRepository, sessionRepository, vaultRepository } from '@/infrastructure/repositories'
 import { AddHostModal } from '@/presentation/components/sidebar'
@@ -37,7 +37,12 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { openSettings } = useUIStore()
   const { hosts: allHosts } = useHostStore()
   const { sessions, activeSessionId, setActiveSession } = useSessionStore()
-  const { activeTerminalHandle } = useTerminalStore()
+  const getTerminalHandle = useTerminalStore((s) => s.getHandle)
+
+  // Resolve the terminal handle for the currently active session.
+  // Because all ActiveSession panes stay mounted, we must look up by sessionId
+  // rather than relying on a single shared handle reference.
+  const activeTerminalHandle = activeSessionId ? getTerminalHandle(activeSessionId) ?? null : null
 
   // For manual Run button clicks in the AI chat UI — fire and forget
   const onRunCommand = useCallback((cmd: string) => {
@@ -68,11 +73,20 @@ export function AppLayout({ children }: AppLayoutProps) {
     return s ? allHosts.find((h) => h.id === s.hostId) ?? null : null
   }, [activeSessionId, sessions, allHosts])
 
-  const { messages, isStreaming, error, sendMessage, abort, clearMessages, executionMode, setExecutionMode } = useAIAgent(agentRunCommand, agentReadFile, activeHostForRules?.aiRules)
+  const { messages, isStreaming, error, sendMessage, abort, clearMessages, executionMode, setExecutionMode } = useAIAgent(activeSessionId, agentRunCommand, agentReadFile, activeHostForRules?.aiRules)
   const { loadApiKey, isApiKeyLoaded } = useSettingsStore()
   const { hosts, saveHost } = useHost(hostRepository)
   const { connectHost, disconnectSession } = useSession(sessionRepository)
   const { loadVault } = useVault(vaultRepository)
+
+  // Wraps disconnectSession to also clean up the per-session AI state.
+  const handleDisconnect = useCallback(
+    async (sessionId: string) => {
+      await disconnectSession(sessionId)
+      useAIStore.getState().removeSession(sessionId)
+    },
+    [disconnectSession],
+  )
 
   const handleUpdateHostRules = useCallback(
     (rules: AIRule[]) => {
@@ -223,7 +237,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                     {(host?.label ?? host?.hostname ?? session.hostId).toUpperCase()}
                   </button>
                   <button
-                    onClick={() => disconnectSession(session.id)}
+                    onClick={() => handleDisconnect(session.id)}
                     className="px-1 h-[44px] opacity-0 group-hover:opacity-50 hover:!opacity-100 transition-opacity"
                     aria-label="Close session"
                     style={{ color: '#8a9bb0' }}
