@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { AppLayout } from '@/presentation/layouts'
 import { Dashboard, Settings } from '@/presentation/pages'
 import { ActiveSession } from '@/presentation/pages/ActiveSession'
-import { useSessionStore, useUIStore } from '@/application/stores'
+import { useSessionStore, useUIStore, useAIStore } from '@/application/stores'
 import { sessionRepository } from '@/infrastructure/repositories'
 
 interface SessionError {
@@ -45,11 +45,13 @@ function AppContent() {
       // Normal exit (user typed `exit`) — silently close the tab
       sessionRepository.disconnect(sessionId).catch(() => {})
       removeSession(sessionId)
+      useAIStore.getState().removeSession(sessionId)
     } else {
       // Unexpected close — show error popup, then close tab
       setSessionError({ sessionId, hostLabel, exitCode })
       sessionRepository.disconnect(sessionId).catch(() => {})
       removeSession(sessionId)
+      useAIStore.getState().removeSession(sessionId)
     }
   }, [removeSession])
 

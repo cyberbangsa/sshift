@@ -37,17 +37,24 @@ export function ActiveSession({ sessionId, onClosed }: ActiveSessionProps) {
   const { sessions } = useSessionStore()
   const { hosts }    = useHostStore()
   const [activeTab, setActiveTab] = useState<ContentTab>('terminal')
-  const setActiveTerminalHandle = useTerminalStore((s) => s.setActiveTerminalHandle)
+  const { registerHandle, unregisterHandle } = useTerminalStore()
 
-  // Callback ref: registers the terminal handle in the global store when the pane mounts
+  // Callback ref: registers this session's terminal handle keyed by sessionId.
+  // All ActiveSession panes remain mounted (to preserve scrollback), so we
+  // must key by sessionId — otherwise the last-mounted session would overwrite
+  // the single shared handle and the AI agent would target the wrong tab.
   const handleTerminalRef = useCallback((handle: TerminalPaneHandle | null) => {
-    setActiveTerminalHandle(handle)
-  }, [setActiveTerminalHandle])
+    if (handle) {
+      registerHandle(sessionId, handle)
+    } else {
+      unregisterHandle(sessionId)
+    }
+  }, [sessionId, registerHandle, unregisterHandle])
 
-  // Clear the handle when this session unmounts
+  // Unregister when this session's component is fully unmounted.
   useEffect(() => {
-    return () => setActiveTerminalHandle(null)
-  }, [setActiveTerminalHandle])
+    return () => unregisterHandle(sessionId)
+  }, [sessionId, unregisterHandle])
 
   const activeSession = sessions.get(sessionId)
   const activeHost    = activeSession ? hosts.find((h) => h.id === activeSession.hostId) : null
