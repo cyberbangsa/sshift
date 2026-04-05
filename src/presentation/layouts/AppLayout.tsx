@@ -6,6 +6,7 @@ import { useHost, useSession, useAIAgent, useVault } from '@/application/hooks'
 import { hostRepository, sessionRepository, vaultRepository } from '@/infrastructure/repositories'
 import { AddHostModal } from '@/presentation/components/sidebar'
 import { AIPanel } from '@/presentation/components/ai'
+import { CommandPalette } from '@/presentation/components/command'
 import { Button, Modal } from '@/presentation/shared'
 import { Vault } from '@/presentation/pages'
 import { APP_NAME } from '@/config'
@@ -35,6 +36,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [showPendingPw, setShowPendingPw]       = useState(false)
 
   const { openSettings } = useUIStore()
+  const { isCommandPaletteOpen, openCommandPalette, closeCommandPalette } = useUIStore()
   const { hosts: allHosts } = useHostStore()
   const { sessions, activeSessionId, setActiveSession } = useSessionStore()
   const getTerminalHandle = useTerminalStore((s) => s.getHandle)
@@ -95,6 +97,15 @@ export function AppLayout({ children }: AppLayoutProps) {
     [activeHostForRules, saveHost],
   )
 
+  const handlePaletteNavigateVault = useCallback(() => {
+    setActiveSession(null)
+    setActiveNav('vault')
+  }, [setActiveSession])
+
+  const handlePaletteNavigateDashboard = useCallback(() => {
+    setActiveSession(null)
+  }, [setActiveSession])
+
   const handleConnect = useCallback(
     async (host: Host) => {
       // If host already has an active session, just switch to it
@@ -148,6 +159,18 @@ export function AppLayout({ children }: AppLayoutProps) {
     loadVault()
   }, [loadVault])
 
+  // Global Cmd+K / Ctrl+K shortcut to open command palette
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        openCommandPalette()
+      }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [openCommandPalette])
+
 
 
   /* ── SESSION MODE (any open sessions, including dashboard tab) ── */
@@ -180,21 +203,29 @@ export function AppLayout({ children }: AppLayoutProps) {
             </span>
           </div>
 
-          {/* Jump to command */}
-          <div
-            className="flex-1 max-w-xs flex items-center gap-2 px-3 py-1.5 rounded"
+          {/* Command palette trigger */}
+          <button
+            onClick={openCommandPalette}
+            className="flex-1 max-w-xs flex items-center gap-2 px-3 py-1.5 rounded transition-colors hover:border-border-ghost"
             style={{ background: '#161a1e', border: '1px solid #1d2126' }}
+            aria-label="Open command palette (⌘K)"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#56687a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
             <span
-              className="text-[0.6875rem]"
+              className="flex-1 text-left text-[0.6875rem]"
               style={{ fontFamily: "'Inter', sans-serif", color: '#56687a' }}
             >
               Jump to command…
             </span>
-          </div>
+            <kbd
+              className="text-[0.525rem] font-mono px-1 py-0.5 rounded shrink-0"
+              style={{ background: '#1d2126', color: '#3c494e', border: '1px solid #252a30' }}
+            >
+              ⌘K
+            </kbd>
+          </button>
 
           {/* ── Session tab strip ──────────────────────────── */}
           <div className="flex items-center flex-1 overflow-x-auto" style={{ marginLeft: '12px' }}>
@@ -355,6 +386,15 @@ export function AppLayout({ children }: AppLayoutProps) {
           onClose={() => setIsAddHostOpen(false)}
           onSave={saveHost}
         />
+        <CommandPalette
+          isOpen={isCommandPaletteOpen}
+          onClose={closeCommandPalette}
+          onConnect={handleConnect}
+          onAddHost={() => { setIsAddHostOpen(true) }}
+          onOpenSettings={openSettings}
+          onNavigateVault={handlePaletteNavigateVault}
+          onNavigateDashboard={handlePaletteNavigateDashboard}
+        />
       </div>
     )
   }
@@ -383,18 +423,29 @@ export function AppLayout({ children }: AppLayoutProps) {
           </span>
         </div>
 
-        {/* Jump to command */}
-        <div
-          className="flex-1 max-w-xs flex items-center gap-2 px-3 py-1.5 rounded"
+        {/* Command palette trigger */}
+        <button
+          onClick={openCommandPalette}
+          className="flex-1 max-w-xs flex items-center gap-2 px-3 py-1.5 rounded transition-colors hover:border-border-ghost"
           style={{ background: '#161a1e', border: '1px solid #1d2126' }}
+          aria-label="Open command palette (⌘K)"
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#56687a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
-          <span className="text-[0.6875rem]" style={{ fontFamily: "'Inter', sans-serif", color: '#56687a' }}>
+          <span
+            className="flex-1 text-left text-[0.6875rem]"
+            style={{ fontFamily: "'Inter', sans-serif", color: '#56687a' }}
+          >
             Jump to command…
           </span>
-        </div>
+          <kbd
+            className="text-[0.525rem] font-mono px-1 py-0.5 rounded shrink-0"
+            style={{ background: '#1d2126', color: '#3c494e', border: '1px solid #252a30' }}
+          >
+            ⌘K
+          </kbd>
+        </button>
 
         {/* Dashboard tab (always active here) */}
         <div className="flex items-center flex-1 overflow-x-auto" style={{ marginLeft: '12px' }}>
@@ -498,6 +549,15 @@ export function AppLayout({ children }: AppLayoutProps) {
         isOpen={isAddHostOpen}
         onClose={() => setIsAddHostOpen(false)}
         onSave={saveHost}
+      />
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={closeCommandPalette}
+        onConnect={handleConnect}
+        onAddHost={() => { setIsAddHostOpen(true) }}
+        onOpenSettings={openSettings}
+        onNavigateVault={handlePaletteNavigateVault}
+        onNavigateDashboard={handlePaletteNavigateDashboard}
       />
 
       {/* ── Connection error banner ──────────────────────────── */}
