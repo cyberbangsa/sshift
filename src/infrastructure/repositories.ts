@@ -4,8 +4,8 @@
  * and falls back to local/mock implementations in browser dev mode.
  */
 
-import type { ISessionRepository } from '@/domain/repositories'
-import { TauriSessionRepository } from './tauri'
+import type { ISessionRepository, IVaultRepository } from '@/domain/repositories'
+import { TauriSessionRepository, TauriVaultRepository } from './tauri'
 import { LocalStorageRepository, LocalSessionRepository } from './storage'
 
 const isTauri =
@@ -16,3 +16,13 @@ export const hostRepository = new LocalStorageRepository()
 export const sessionRepository: ISessionRepository = isTauri
   ? new TauriSessionRepository()
   : new LocalSessionRepository()
+
+export const vaultRepository: IVaultRepository = isTauri
+  ? new TauriVaultRepository()
+  : // Browser dev fallback — no-op implementation (vault requires the native app)
+  {
+    getAll: async () => [],
+    add: async () => { throw new Error('Vault requires the native app') },
+    rename: async () => { },
+    delete: async () => { },
+  }
