@@ -24,7 +24,7 @@ fn read_local_dir(path: &str) -> Result<Vec<FileEntry>, String> {
             let modified_at = meta
                 .modified()
                 .ok()
-                .map(|t| chrono::DateTime::from(t))
+                .map(chrono::DateTime::from)
                 .unwrap_or_else(chrono::Utc::now);
 
             #[cfg(unix)]

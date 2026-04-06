@@ -13,6 +13,7 @@ use crate::infrastructure::ssh::SshManager;
 /// When `public_key_vault_entry_id` is provided it is resolved to a path and
 /// passed as the explicit public-key file for certificate-based auth.
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub async fn connect_session(
     state: tauri::State<'_, SshManager>,
     app: tauri::AppHandle,

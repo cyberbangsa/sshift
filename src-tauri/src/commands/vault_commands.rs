@@ -1,7 +1,7 @@
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tauri::Manager;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -36,11 +36,11 @@ pub fn vault_dir(app_handle: &tauri::AppHandle) -> Result<PathBuf, String> {
     Ok(dir)
 }
 
-fn index_path(vault: &PathBuf) -> PathBuf {
+fn index_path(vault: &Path) -> PathBuf {
     vault.join("index.json")
 }
 
-fn read_index(vault: &PathBuf) -> Result<Vec<VaultEntry>, String> {
+fn read_index(vault: &Path) -> Result<Vec<VaultEntry>, String> {
     let p = index_path(vault);
     if !p.exists() {
         return Ok(Vec::new());
@@ -49,14 +49,14 @@ fn read_index(vault: &PathBuf) -> Result<Vec<VaultEntry>, String> {
     serde_json::from_str(&raw).map_err(|e| e.to_string())
 }
 
-fn write_index(vault: &PathBuf, entries: &[VaultEntry]) -> Result<(), String> {
+fn write_index(vault: &Path, entries: &[VaultEntry]) -> Result<(), String> {
     let raw = serde_json::to_string_pretty(entries).map_err(|e| e.to_string())?;
     fs::write(index_path(vault), raw).map_err(|e| e.to_string())
 }
 
 /// Returns the absolute path of the key file for a vault entry.
 /// Used by `session_commands` to pass the resolved path to the SSH manager.
-pub fn key_file_path(vault: &PathBuf, id: &str) -> PathBuf {
+pub fn key_file_path(vault: &Path, id: &str) -> PathBuf {
     vault.join(id)
 }
 
