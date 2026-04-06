@@ -69,6 +69,8 @@ describe('AIPanel', () => {
   it('should disable send button while streaming', () => {
     render(<AIPanel {...defaultProps} isStreaming={true} />)
 
-    expect(screen.getByRole('button', { name: /send message/i })).toBeDisabled()
+    // When streaming the send button is replaced by a Stop AI button
+    expect(screen.queryByRole('button', { name: /send message/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /stop ai/i })).toBeInTheDocument()
   })
 })
