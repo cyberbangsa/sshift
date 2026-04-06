@@ -4,8 +4,23 @@ import type { AIMessage } from '@/domain/entities'
 
 // ── Custom code theme to match app palette ────────────────────────────────────
 const codeTheme: Record<string, React.CSSProperties> = {
-  'code[class*="language-"]': { color: '#a8e8ff', background: 'none', fontFamily: "'JetBrains Mono', 'Fira Code', monospace", fontSize: '0.6875rem', lineHeight: '1.5' },
-  'pre[class*="language-"]': { color: '#a8e8ff', background: '#161a1e', padding: '0', margin: '0', overflow: 'auto', fontFamily: "'JetBrains Mono', 'Fira Code', monospace", fontSize: '0.6875rem', lineHeight: '1.5' },
+  'code[class*="language-"]': {
+    color: '#a8e8ff',
+    background: 'none',
+    fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+    fontSize: '0.6875rem',
+    lineHeight: '1.5',
+  },
+  'pre[class*="language-"]': {
+    color: '#a8e8ff',
+    background: '#161a1e',
+    padding: '0',
+    margin: '0',
+    overflow: 'auto',
+    fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+    fontSize: '0.6875rem',
+    lineHeight: '1.5',
+  },
   comment: { color: '#56687a', fontStyle: 'italic' },
   prolog: { color: '#56687a' },
   doctype: { color: '#56687a' },
@@ -104,9 +119,23 @@ function CodeBlock({ lang, code, onRunCommand, isExecuted }: CodeBlockProps) {
           {isRunnable && isExecuted && (
             <span
               className="flex items-center gap-1 px-2 py-0.5 rounded text-[0.6rem] font-semibold"
-              style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', color: '#22c55e', fontFamily: "'Inter', sans-serif" }}
+              style={{
+                background: 'rgba(34,197,94,0.08)',
+                border: '1px solid rgba(34,197,94,0.2)',
+                color: '#22c55e',
+                fontFamily: "'Inter', sans-serif",
+              }}
             >
-              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="9"
+                height="9"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#22c55e"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <polyline points="20 6 9 17 4 12" />
               </svg>
               Executed
@@ -116,9 +145,18 @@ function CodeBlock({ lang, code, onRunCommand, isExecuted }: CodeBlockProps) {
             <button
               onClick={() => onRunCommand(code)}
               className="flex items-center gap-1 px-2 py-0.5 rounded text-[0.6rem] font-semibold transition-colors"
-              style={{ background: 'rgba(168,232,255,0.08)', border: '1px solid rgba(168,232,255,0.2)', color: '#a8e8ff', fontFamily: "'Inter', sans-serif" }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(168,232,255,0.15)' }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(168,232,255,0.08)' }}
+              style={{
+                background: 'rgba(168,232,255,0.08)',
+                border: '1px solid rgba(168,232,255,0.2)',
+                color: '#a8e8ff',
+                fontFamily: "'Inter', sans-serif",
+              }}
+              onMouseEnter={(e) => {
+                ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(168,232,255,0.15)'
+              }}
+              onMouseLeave={(e) => {
+                ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(168,232,255,0.08)'
+              }}
             >
               <svg width="9" height="9" viewBox="0 0 24 24" fill="#a8e8ff" stroke="none">
                 <polygon points="5 3 19 12 5 21 5 3" />
@@ -134,11 +172,29 @@ function CodeBlock({ lang, code, onRunCommand, isExecuted }: CodeBlockProps) {
             title="Copy"
           >
             {copied ? (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             ) : (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
               </svg>
@@ -153,7 +209,13 @@ function CodeBlock({ lang, code, onRunCommand, isExecuted }: CodeBlockProps) {
           style={codeTheme}
           PreTag="div"
           CodeTag="code"
-          customStyle={{ margin: 0, padding: 0, background: 'transparent', fontSize: '0.6875rem', lineHeight: 1.5 }}
+          customStyle={{
+            margin: 0,
+            padding: 0,
+            background: 'transparent',
+            fontSize: '0.6875rem',
+            lineHeight: 1.5,
+          }}
           codeTagProps={{ style: { fontFamily: "'JetBrains Mono', 'Fira Code', monospace" } }}
           wrapLongLines={false}
         >
@@ -172,7 +234,11 @@ interface MessageBubbleProps {
   executionMode?: 'manual' | 'auto'
 }
 
-export function MessageBubble({ message, onRunCommand, executionMode = 'manual' }: MessageBubbleProps) {
+export function MessageBubble({
+  message,
+  onRunCommand,
+  executionMode = 'manual',
+}: MessageBubbleProps) {
   const isUser = message.role === 'user'
   const segments = parseContent(message.content)
 
@@ -181,7 +247,10 @@ export function MessageBubble({ message, onRunCommand, executionMode = 'manual' 
       <div className="flex justify-end">
         <div
           className="max-w-[85%] px-3 py-2 rounded"
-          style={{ background: 'rgba(168,232,255,0.12)', border: '1px solid rgba(168,232,255,0.2)' }}
+          style={{
+            background: 'rgba(168,232,255,0.12)',
+            border: '1px solid rgba(168,232,255,0.2)',
+          }}
         >
           <p
             className="text-[0.6875rem] whitespace-pre-wrap break-words"
@@ -202,7 +271,16 @@ export function MessageBubble({ message, onRunCommand, executionMode = 'manual' 
         className="w-6 h-6 rounded shrink-0 flex items-center justify-center mt-0.5"
         style={{ background: 'rgba(168,232,255,0.1)', border: '1px solid rgba(168,232,255,0.25)' }}
       >
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="#a8e8ff" stroke="#a8e8ff" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 24 24"
+          fill="#a8e8ff"
+          stroke="#a8e8ff"
+          strokeWidth="1"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
         </svg>
       </div>

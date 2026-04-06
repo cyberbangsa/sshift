@@ -20,7 +20,10 @@ export function Settings() {
   const [activeSection, setActiveSection] = useState<SettingsSection>('ai')
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden" style={{ background: '#0c0e11' }}>
+    <div
+      className="flex flex-col h-screen w-screen overflow-hidden"
+      style={{ background: '#0c0e11' }}
+    >
       {/* Top bar */}
       <div
         className="flex items-center h-[44px] shrink-0 px-4 gap-3"
@@ -32,7 +35,16 @@ export function Settings() {
           className="flex items-center gap-1.5 px-2 py-1 rounded text-[0.8125rem] transition-colors hover:bg-white/5"
           style={{ color: '#8a9bb0', fontFamily: "'Inter', sans-serif" }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <polyline points="15 18 9 12 15 6" />
           </svg>
           Back
@@ -74,8 +86,8 @@ export function Settings() {
             {SECTION_TITLES[activeSection]}
           </h2>
 
-          {activeSection === 'ai'          && <AISettingsSection />}
-          {activeSection === 'terminal'    && <TerminalSettingsSection />}
+          {activeSection === 'ai' && <AISettingsSection />}
+          {activeSection === 'terminal' && <TerminalSettingsSection />}
           {activeSection === 'connections' && <ConnectionSettingsSection />}
         </main>
       </div>

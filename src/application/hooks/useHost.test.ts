@@ -20,7 +20,10 @@ describe('useHost', () => {
   })
 
   it('should load hosts from repository', async () => {
-    const hosts = [createHost({ id: '1', label: 'Server A' }), createHost({ id: '2', label: 'Server B' })]
+    const hosts = [
+      createHost({ id: '1', label: 'Server A' }),
+      createHost({ id: '2', label: 'Server B' }),
+    ]
     repository = new MockHostRepository(hosts)
 
     const { result } = renderHook(() => useHost(repository))

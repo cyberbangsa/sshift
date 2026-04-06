@@ -28,7 +28,11 @@ export class OpenRouterClient implements IAIClient {
     this.config = config
   }
 
-  async sendMessage(history: AIMessage[], userMessage: string, signal?: AbortSignal): Promise<string> {
+  async sendMessage(
+    history: AIMessage[],
+    userMessage: string,
+    signal?: AbortSignal,
+  ): Promise<string> {
     const messages: OpenRouterMessage[] = [
       { role: 'system', content: this.config.systemPrompt },
       ...history.map((msg) => ({

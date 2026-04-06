@@ -35,7 +35,7 @@ export function formatSshError(raw: string): string {
     }
     // "disconnect" or "Permission denied" from the server
     if (/permission denied/i.test(msg) || /publickey/i.test(msg)) {
-      return 'The server rejected the key. Make sure the correct public key is added to the server\'s authorized_keys.'
+      return "The server rejected the key. Make sure the correct public key is added to the server's authorized_keys."
     }
     if (/password/i.test(msg)) {
       return 'Incorrect password. Please check your credentials and try again.'
@@ -65,5 +65,8 @@ export function formatSshError(raw: string): string {
   }
 
   // ── Fallback: strip noisy libssh2 session codes like "[Session(-19)]" ─────
-  return msg.replace(/\[Session\(-?\d+\)\]\s*/gi, '').replace(/\s{2,}/g, ' ').trim()
+  return msg
+    .replace(/\[Session\(-?\d+\)\]\s*/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
 }

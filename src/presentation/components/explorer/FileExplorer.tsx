@@ -98,11 +98,7 @@ export function FileExplorer({ sessionId, hostLabel }: FileExplorerProps) {
   // ── Transfer helpers ──────────────────────────────────────────────────────
 
   const startTransfer = useCallback(
-    async (
-      direction: 'upload' | 'download',
-      srcEntry: FileEntry,
-      destDir: string,
-    ) => {
+    async (direction: 'upload' | 'download', srcEntry: FileEntry, destDir: string) => {
       if (srcEntry.type !== 'file') return
 
       const transferId = crypto.randomUUID()
@@ -144,7 +140,9 @@ export function FileExplorer({ sessionId, hostLabel }: FileExplorerProps) {
           })
         }
       } catch (e) {
-        useTransferStore.getState().updateTransfer(transferId, { status: 'failed', error: String(e) })
+        useTransferStore
+          .getState()
+          .updateTransfer(transferId, { status: 'failed', error: String(e) })
       }
 
       // After a short delay, refresh the destination pane and clean up listener
@@ -161,84 +159,88 @@ export function FileExplorer({ sessionId, hostLabel }: FileExplorerProps) {
         setTimeout(() => removeTransfer(transferId), 4000)
       }, 800)
     },
-    [sessionId, addTransfer, watchTransfer, removeTransfer, local.path, remote.path, loadLocal, loadRemote],
+    [
+      sessionId,
+      addTransfer,
+      watchTransfer,
+      removeTransfer,
+      local.path,
+      remote.path,
+      loadLocal,
+      loadRemote,
+    ],
   )
 
   // ── Drag & drop handlers ──────────────────────────────────────────────────
 
   const handleDragStart = useCallback(
-    (side: 'local' | 'remote') =>
-      (entry: FileEntry, e: React.DragEvent<HTMLDivElement>) => {
-        dragEntryRef.current = entry
-        dragOriginRef.current = side   // ref: instant, no stale closure
-        setDragOrigin(side)            // state: for UI
-        e.dataTransfer.effectAllowed = 'copy'
-      },
+    (side: 'local' | 'remote') => (entry: FileEntry, e: React.DragEvent<HTMLDivElement>) => {
+      dragEntryRef.current = entry
+      dragOriginRef.current = side // ref: instant, no stale closure
+      setDragOrigin(side) // state: for UI
+      e.dataTransfer.effectAllowed = 'copy'
+    },
     [],
   )
 
   const handleDragOver = useCallback(
-    (targetSide: 'local' | 'remote') =>
-      (e: React.DragEvent<HTMLDivElement>) => {
-        // Always preventDefault — required for drop to fire.
-        // Use the ref so we always have the current origin, not a stale closure.
-        const origin = dragOriginRef.current
-        if (origin !== null && origin !== targetSide) {
-          e.preventDefault()
-          e.dataTransfer.dropEffect = 'copy'
-        }
-      },
+    (targetSide: 'local' | 'remote') => (e: React.DragEvent<HTMLDivElement>) => {
+      // Always preventDefault — required for drop to fire.
+      // Use the ref so we always have the current origin, not a stale closure.
+      const origin = dragOriginRef.current
+      if (origin !== null && origin !== targetSide) {
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'copy'
+      }
+    },
     [],
   )
 
   const handleDragEnter = useCallback(
-    (targetSide: 'local' | 'remote') =>
-      (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault()
-        dragCounters.current[targetSide]++
-        const origin = dragOriginRef.current
-        if (origin !== null && origin !== targetSide) {
-          setDropTarget(targetSide)
-        }
-      },
+    (targetSide: 'local' | 'remote') => (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault()
+      dragCounters.current[targetSide]++
+      const origin = dragOriginRef.current
+      if (origin !== null && origin !== targetSide) {
+        setDropTarget(targetSide)
+      }
+    },
     [],
   )
 
   const handleDragLeave = useCallback(
-    (targetSide: 'local' | 'remote') =>
-      (_e: React.DragEvent<HTMLDivElement>) => {
-        dragCounters.current[targetSide]--
-        if (dragCounters.current[targetSide] <= 0) {
-          dragCounters.current[targetSide] = 0
-          setDropTarget((prev) => (prev === targetSide ? null : prev))
-        }
-      },
+    (targetSide: 'local' | 'remote') => (_e: React.DragEvent<HTMLDivElement>) => {
+      dragCounters.current[targetSide]--
+      if (dragCounters.current[targetSide] <= 0) {
+        dragCounters.current[targetSide] = 0
+        setDropTarget((prev) => (prev === targetSide ? null : prev))
+      }
+    },
     [],
   )
 
   const handleDrop = useCallback(
-    (targetSide: 'local' | 'remote') =>
-      (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault()
-        dragCounters.current[targetSide] = 0
-        setDropTarget(null)
-        setDragOrigin(null)
+    (targetSide: 'local' | 'remote') => (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault()
+      dragCounters.current[targetSide] = 0
+      setDropTarget(null)
+      setDragOrigin(null)
 
-        // Use ref — guaranteed current value, no stale closure
-        const origin = dragOriginRef.current
-        dragOriginRef.current = null
-        const entry = dragEntryRef.current
-        dragEntryRef.current = null
+      // Use ref — guaranteed current value, no stale closure
+      const origin = dragOriginRef.current
+      dragOriginRef.current = null
+      const entry = dragEntryRef.current
+      dragEntryRef.current = null
 
-        if (!entry || entry.type !== 'file') return
-        if (origin === null || origin === targetSide) return
+      if (!entry || entry.type !== 'file') return
+      if (origin === null || origin === targetSide) return
 
-        if (targetSide === 'remote') {
-          startTransfer('upload', entry, remote.path)
-        } else {
-          startTransfer('download', entry, local.path)
-        }
-      },
+      if (targetSide === 'remote') {
+        startTransfer('upload', entry, remote.path)
+      } else {
+        startTransfer('download', entry, local.path)
+      }
+    },
     [local.path, remote.path, startTransfer],
   )
 
@@ -306,8 +308,8 @@ export function FileExplorer({ sessionId, hostLabel }: FileExplorerProps) {
 
         {/* ── Middle action bar ──────────────────────────────────────── */}
         {(() => {
-          const isDraggingToRemote = dragOrigin === 'local'  // local → remote = upload
-          const isDraggingToLocal  = dragOrigin === 'remote' // remote → local = download
+          const isDraggingToRemote = dragOrigin === 'local' // local → remote = upload
+          const isDraggingToLocal = dragOrigin === 'remote' // remote → local = download
           const isDragging = dragOrigin !== null
 
           return (
@@ -316,7 +318,7 @@ export function FileExplorer({ sessionId, hostLabel }: FileExplorerProps) {
               style={{
                 width: 52,
                 background: '#0c0e11',
-                borderLeft:  `1px solid ${isDragging ? (isDraggingToRemote ? 'rgba(168,232,255,0.25)' : 'rgba(125,211,252,0.25)') : '#1d2126'}`,
+                borderLeft: `1px solid ${isDragging ? (isDraggingToRemote ? 'rgba(168,232,255,0.25)' : 'rgba(125,211,252,0.25)') : '#1d2126'}`,
                 borderRight: `1px solid ${isDragging ? (isDraggingToRemote ? 'rgba(168,232,255,0.25)' : 'rgba(125,211,252,0.25)') : '#1d2126'}`,
                 transition: 'border-color 0.2s',
               }}
@@ -344,13 +346,19 @@ export function FileExplorer({ sessionId, hostLabel }: FileExplorerProps) {
               <button
                 onClick={handleUpload}
                 disabled={!canUpload && !isDraggingToRemote}
-                title={canUpload ? `Upload ${local.selected?.name} → remote` : 'Select a local file first'}
+                title={
+                  canUpload
+                    ? `Upload ${local.selected?.name} → remote`
+                    : 'Select a local file first'
+                }
                 className="flex flex-col items-center gap-1 px-2 py-2 rounded transition-all"
                 style={{
                   color: isDraggingToRemote ? '#a8e8ff' : canUpload ? '#a8e8ff' : '#2a3a4a',
                   background: isDraggingToRemote
                     ? 'rgba(168,232,255,0.15)'
-                    : canUpload ? 'rgba(168,232,255,0.07)' : 'transparent',
+                    : canUpload
+                      ? 'rgba(168,232,255,0.07)'
+                      : 'transparent',
                   border: `1px solid ${isDraggingToRemote ? 'rgba(168,232,255,0.45)' : canUpload ? 'rgba(168,232,255,0.2)' : 'transparent'}`,
                   cursor: canUpload ? 'pointer' : 'default',
                   boxShadow: isDraggingToRemote ? '0 0 8px rgba(168,232,255,0.3)' : 'none',
@@ -358,11 +366,28 @@ export function FileExplorer({ sessionId, hostLabel }: FileExplorerProps) {
                   transition: 'all 0.2s',
                 }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" />
-                  <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="17 1 21 5 17 9" />
+                  <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                  <polyline points="7 23 3 19 7 15" />
+                  <path d="M21 13v2a4 4 0 0 1-4 4H3" />
                 </svg>
-                <span style={{ fontSize: '0.5rem', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.05em' }}>
+                <span
+                  style={{
+                    fontSize: '0.5rem',
+                    fontFamily: "'JetBrains Mono', monospace",
+                    letterSpacing: '0.05em',
+                  }}
+                >
                   UP
                 </span>
               </button>
@@ -374,13 +399,19 @@ export function FileExplorer({ sessionId, hostLabel }: FileExplorerProps) {
               <button
                 onClick={handleDownload}
                 disabled={!canDownload && !isDraggingToLocal}
-                title={canDownload ? `Download ${remote.selected?.name} → local` : 'Select a remote file first'}
+                title={
+                  canDownload
+                    ? `Download ${remote.selected?.name} → local`
+                    : 'Select a remote file first'
+                }
                 className="flex flex-col items-center gap-1 px-2 py-2 rounded transition-all"
                 style={{
                   color: isDraggingToLocal ? '#7dd3fc' : canDownload ? '#7dd3fc' : '#2a3a4a',
                   background: isDraggingToLocal
                     ? 'rgba(125,211,252,0.15)'
-                    : canDownload ? 'rgba(125,211,252,0.07)' : 'transparent',
+                    : canDownload
+                      ? 'rgba(125,211,252,0.07)'
+                      : 'transparent',
                   border: `1px solid ${isDraggingToLocal ? 'rgba(125,211,252,0.45)' : canDownload ? 'rgba(125,211,252,0.2)' : 'transparent'}`,
                   cursor: canDownload ? 'pointer' : 'default',
                   boxShadow: isDraggingToLocal ? '0 0 8px rgba(125,211,252,0.3)' : 'none',
@@ -388,10 +419,27 @@ export function FileExplorer({ sessionId, hostLabel }: FileExplorerProps) {
                   transition: 'all 0.2s',
                 }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
-                <span style={{ fontSize: '0.5rem', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.05em' }}>
+                <span
+                  style={{
+                    fontSize: '0.5rem',
+                    fontFamily: "'JetBrains Mono', monospace",
+                    letterSpacing: '0.05em',
+                  }}
+                >
                   DOWN
                 </span>
               </button>
@@ -401,7 +449,9 @@ export function FileExplorer({ sessionId, hostLabel }: FileExplorerProps) {
               <button
                 onClick={handleDeleteRemote}
                 disabled={!remote.selected}
-                title={remote.selected ? `Delete ${remote.selected.name}` : 'Select a remote item first'}
+                title={
+                  remote.selected ? `Delete ${remote.selected.name}` : 'Select a remote item first'
+                }
                 className="flex flex-col items-center gap-1 px-2 py-2 rounded transition-all"
                 style={{
                   color: remote.selected ? '#f87171' : '#2a3a4a',
@@ -410,10 +460,29 @@ export function FileExplorer({ sessionId, hostLabel }: FileExplorerProps) {
                   cursor: remote.selected ? 'pointer' : 'not-allowed',
                 }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                  <path d="M10 11v6" />
+                  <path d="M14 11v6" />
+                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
                 </svg>
-                <span style={{ fontSize: '0.5rem', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.05em' }}>
+                <span
+                  style={{
+                    fontSize: '0.5rem',
+                    fontFamily: "'JetBrains Mono', monospace",
+                    letterSpacing: '0.05em',
+                  }}
+                >
                   DEL
                 </span>
               </button>
@@ -466,13 +535,7 @@ export function FileExplorer({ sessionId, hostLabel }: FileExplorerProps) {
 
 // ── Transfer progress row ─────────────────────────────────────────────────────
 
-function TransferRow({
-  transfer,
-  onDismiss,
-}: {
-  transfer: TransferItem
-  onDismiss: () => void
-}) {
+function TransferRow({ transfer, onDismiss }: { transfer: TransferItem; onDismiss: () => void }) {
   const isFailed = transfer.status === 'failed'
   const isComplete = transfer.status === 'complete'
   const barColor = isFailed ? '#f87171' : isComplete ? '#22c55e' : '#a8e8ff'
@@ -489,7 +552,9 @@ function TransferRow({
       style={{ height: 28, borderBottom: '1px solid #16191e' }}
     >
       {/* Direction arrow */}
-      <span style={{ color: barColor, fontSize: '0.65rem', fontFamily: "'JetBrains Mono', monospace" }}>
+      <span
+        style={{ color: barColor, fontSize: '0.65rem', fontFamily: "'JetBrains Mono', monospace" }}
+      >
         {transfer.direction === 'upload' ? '↑' : '↓'}
       </span>
 
@@ -522,14 +587,28 @@ function TransferRow({
 
       {/* Percentage */}
       <span
-        style={{ color: barColor, fontSize: '0.62rem', fontFamily: "'JetBrains Mono', monospace", minWidth: 32, textAlign: 'right' }}
+        style={{
+          color: barColor,
+          fontSize: '0.62rem',
+          fontFamily: "'JetBrains Mono', monospace",
+          minWidth: 32,
+          textAlign: 'right',
+        }}
       >
         {isFailed ? 'ERR' : `${Math.round(transfer.progress)}%`}
       </span>
 
       {/* Bytes */}
       {!isFailed && (
-        <span style={{ color: '#3a4a5a', fontSize: '0.6rem', fontFamily: "'JetBrains Mono', monospace", minWidth: 60, textAlign: 'right' }}>
+        <span
+          style={{
+            color: '#3a4a5a',
+            fontSize: '0.6rem',
+            fontFamily: "'JetBrains Mono', monospace",
+            minWidth: 60,
+            textAlign: 'right',
+          }}
+        >
           {formatBytes(transfer.bytesTransferred)}
           {transfer.totalBytes > 0 ? ` / ${formatBytes(transfer.totalBytes)}` : ''}
         </span>
@@ -541,11 +620,19 @@ function TransferRow({
         style={{ color: '#2a3a4a', marginLeft: 4 }}
         className="hover:text-white transition-colors"
       >
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        >
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
       </button>
     </div>
   )
 }
-

@@ -20,11 +20,7 @@ const statusVariant: Record<Transfer['status'], 'info' | 'success' | 'warning' |
 
 export function TransferQueue({ transfers }: TransferQueueProps) {
   if (transfers.length === 0) {
-    return (
-      <div className="px-3 py-6 text-center text-text-muted text-sm">
-        No active transfers
-      </div>
-    )
+    return <div className="px-3 py-6 text-center text-text-muted text-sm">No active transfers</div>
   }
 
   return (

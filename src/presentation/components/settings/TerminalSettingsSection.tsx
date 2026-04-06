@@ -2,10 +2,10 @@ import { useSettingsStore } from '@/application/stores'
 
 const FONT_FAMILIES = [
   { label: 'JetBrains Mono', value: "'JetBrains Mono', 'Fira Code', monospace" },
-  { label: 'Fira Code',      value: "'Fira Code', 'JetBrains Mono', monospace" },
-  { label: 'Cascadia Code',  value: "'Cascadia Code', 'JetBrains Mono', monospace" },
-  { label: 'Menlo',          value: "Menlo, 'JetBrains Mono', monospace" },
-  { label: 'Consolas',       value: "Consolas, 'JetBrains Mono', monospace" },
+  { label: 'Fira Code', value: "'Fira Code', 'JetBrains Mono', monospace" },
+  { label: 'Cascadia Code', value: "'Cascadia Code', 'JetBrains Mono', monospace" },
+  { label: 'Menlo', value: "Menlo, 'JetBrains Mono', monospace" },
+  { label: 'Consolas', value: "Consolas, 'JetBrains Mono', monospace" },
 ]
 
 export function TerminalSettingsSection() {
@@ -15,7 +15,10 @@ export function TerminalSettingsSection() {
     <div className="flex flex-col gap-8 max-w-2xl">
       {/* Font Size */}
       <section>
-        <h3 className="text-[0.6875rem] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: '#56687a' }}>
+        <h3
+          className="text-[0.6875rem] font-semibold tracking-[0.12em] uppercase mb-3"
+          style={{ color: '#56687a' }}
+        >
           Font Size
         </h3>
         <div className="flex items-center gap-4">
@@ -30,7 +33,12 @@ export function TerminalSettingsSection() {
           />
           <div
             className="w-[72px] px-2 py-1.5 rounded text-center text-[0.8125rem]"
-            style={{ background: '#161a1e', border: '1px solid #1d2126', color: '#e2e2e6', fontFamily: "'JetBrains Mono', monospace" }}
+            style={{
+              background: '#161a1e',
+              border: '1px solid #1d2126',
+              color: '#e2e2e6',
+              fontFamily: "'JetBrains Mono', monospace",
+            }}
           >
             {settings.terminalFontSize}px
           </div>
@@ -56,7 +64,10 @@ export function TerminalSettingsSection() {
 
       {/* Font Family */}
       <section>
-        <h3 className="text-[0.6875rem] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: '#56687a' }}>
+        <h3
+          className="text-[0.6875rem] font-semibold tracking-[0.12em] uppercase mb-3"
+          style={{ color: '#56687a' }}
+        >
           Font Family
         </h3>
         <div className="flex flex-col gap-1.5">
@@ -66,8 +77,14 @@ export function TerminalSettingsSection() {
               onClick={() => updateSettings({ terminalFontFamily: f.value })}
               className="flex items-center gap-3 px-3 py-2.5 rounded text-left transition-colors hover:bg-white/5"
               style={{
-                background: settings.terminalFontFamily === f.value ? 'rgba(168,232,255,0.06)' : 'transparent',
-                border: settings.terminalFontFamily === f.value ? '1px solid rgba(168,232,255,0.2)' : '1px solid #1d2126',
+                background:
+                  settings.terminalFontFamily === f.value
+                    ? 'rgba(168,232,255,0.06)'
+                    : 'transparent',
+                border:
+                  settings.terminalFontFamily === f.value
+                    ? '1px solid rgba(168,232,255,0.2)'
+                    : '1px solid #1d2126',
               }}
             >
               <span
@@ -83,10 +100,7 @@ export function TerminalSettingsSection() {
               >
                 {f.label}
               </span>
-              <span
-                className="text-[0.75rem]"
-                style={{ color: '#56687a', fontFamily: f.value }}
-              >
+              <span className="text-[0.75rem]" style={{ color: '#56687a', fontFamily: f.value }}>
                 ls -la ~/
               </span>
             </button>

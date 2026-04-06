@@ -5,7 +5,8 @@ import { ConnectHost, DisconnectHost } from '@/domain/usecases'
 import type { ISessionRepository } from '@/domain/repositories'
 
 export function useSession(repository: ISessionRepository) {
-  const { sessions, activeSessionId, addSession, removeSession, setActiveSession, updateSession } = useSessionStore()
+  const { sessions, activeSessionId, addSession, removeSession, setActiveSession, updateSession } =
+    useSessionStore()
 
   const connectHost = useCallback(
     async (host: Host) => {
@@ -34,7 +35,7 @@ export function useSession(repository: ISessionRepository) {
     [repository],
   )
 
-  const activeSession = activeSessionId ? sessions.get(activeSessionId) ?? null : null
+  const activeSession = activeSessionId ? (sessions.get(activeSessionId) ?? null) : null
   const sessionList = Array.from(sessions.values())
 
   return {

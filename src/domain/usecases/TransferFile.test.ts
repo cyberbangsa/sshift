@@ -12,7 +12,12 @@ describe('TransferFile', () => {
   })
 
   it('should initiate an upload transfer', async () => {
-    const transfer = await useCase.execute('session-1', '/local/file.txt', '/remote/file.txt', 'upload')
+    const transfer = await useCase.execute(
+      'session-1',
+      '/local/file.txt',
+      '/remote/file.txt',
+      'upload',
+    )
 
     expect(transfer.direction).toBe('upload')
     expect(transfer.sourcePath).toBe('/local/file.txt')
@@ -21,7 +26,12 @@ describe('TransferFile', () => {
   })
 
   it('should initiate a download transfer', async () => {
-    const transfer = await useCase.execute('session-1', '/remote/file.txt', '/local/file.txt', 'download')
+    const transfer = await useCase.execute(
+      'session-1',
+      '/remote/file.txt',
+      '/local/file.txt',
+      'download',
+    )
 
     expect(transfer.direction).toBe('download')
     expect(transfer.sourcePath).toBe('/remote/file.txt')
@@ -29,18 +39,18 @@ describe('TransferFile', () => {
   })
 
   it('should throw TransferError when source path is empty', async () => {
-    await expect(
-      useCase.execute('session-1', '', '/remote/file.txt', 'upload'),
-    ).rejects.toThrow(TransferError)
-    await expect(
-      useCase.execute('session-1', '', '/remote/file.txt', 'upload'),
-    ).rejects.toThrow('Source and destination paths are required')
+    await expect(useCase.execute('session-1', '', '/remote/file.txt', 'upload')).rejects.toThrow(
+      TransferError,
+    )
+    await expect(useCase.execute('session-1', '', '/remote/file.txt', 'upload')).rejects.toThrow(
+      'Source and destination paths are required',
+    )
   })
 
   it('should throw TransferError when destination path is empty', async () => {
-    await expect(
-      useCase.execute('session-1', '/local/file.txt', '', 'upload'),
-    ).rejects.toThrow(TransferError)
+    await expect(useCase.execute('session-1', '/local/file.txt', '', 'upload')).rejects.toThrow(
+      TransferError,
+    )
   })
 
   it('should throw TransferError when repository fails', async () => {

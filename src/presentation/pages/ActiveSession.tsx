@@ -17,8 +17,18 @@ const CONTENT_TABS: { id: ContentTab; label: string; icon: React.ReactNode }[] =
     id: 'terminal',
     label: 'Terminal',
     icon: (
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" />
+      <svg
+        width="13"
+        height="13"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <polyline points="4 17 10 11 4 5" />
+        <line x1="12" y1="19" x2="20" y2="19" />
       </svg>
     ),
   },
@@ -26,7 +36,16 @@ const CONTENT_TABS: { id: ContentTab; label: string; icon: React.ReactNode }[] =
     id: 'explorer',
     label: 'File Explorer',
     icon: (
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="13"
+        height="13"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
       </svg>
     ),
@@ -35,7 +54,7 @@ const CONTENT_TABS: { id: ContentTab; label: string; icon: React.ReactNode }[] =
 
 export function ActiveSession({ sessionId, onClosed }: ActiveSessionProps) {
   const { sessions } = useSessionStore()
-  const { hosts }    = useHostStore()
+  const { hosts } = useHostStore()
   const [activeTab, setActiveTab] = useState<ContentTab>('terminal')
   const { registerHandle, unregisterHandle } = useTerminalStore()
 
@@ -43,13 +62,16 @@ export function ActiveSession({ sessionId, onClosed }: ActiveSessionProps) {
   // All ActiveSession panes remain mounted (to preserve scrollback), so we
   // must key by sessionId — otherwise the last-mounted session would overwrite
   // the single shared handle and the AI agent would target the wrong tab.
-  const handleTerminalRef = useCallback((handle: TerminalPaneHandle | null) => {
-    if (handle) {
-      registerHandle(sessionId, handle)
-    } else {
-      unregisterHandle(sessionId)
-    }
-  }, [sessionId, registerHandle, unregisterHandle])
+  const handleTerminalRef = useCallback(
+    (handle: TerminalPaneHandle | null) => {
+      if (handle) {
+        registerHandle(sessionId, handle)
+      } else {
+        unregisterHandle(sessionId)
+      }
+    },
+    [sessionId, registerHandle, unregisterHandle],
+  )
 
   // Unregister when this session's component is fully unmounted.
   useEffect(() => {
@@ -57,7 +79,7 @@ export function ActiveSession({ sessionId, onClosed }: ActiveSessionProps) {
   }, [sessionId, unregisterHandle])
 
   const activeSession = sessions.get(sessionId)
-  const activeHost    = activeSession ? hosts.find((h) => h.id === activeSession.hostId) : null
+  const activeHost = activeSession ? hosts.find((h) => h.id === activeSession.hostId) : null
 
   return (
     <div className="flex flex-col h-full" style={{ background: '#111317' }}>
@@ -91,7 +113,8 @@ export function ActiveSession({ sessionId, onClosed }: ActiveSessionProps) {
         {/* Terminal — always mounted to preserve xterm history */}
         <div
           style={{
-            position: 'absolute', inset: 0,
+            position: 'absolute',
+            inset: 0,
             visibility: activeTab === 'terminal' ? 'visible' : 'hidden',
             pointerEvents: activeTab === 'terminal' ? 'auto' : 'none',
           }}
@@ -103,7 +126,10 @@ export function ActiveSession({ sessionId, onClosed }: ActiveSessionProps) {
               onClosed={onClosed}
             />
           ) : (
-            <div className="flex items-center justify-center h-full" style={{ color: '#56687a', fontSize: '0.75rem' }}>
+            <div
+              className="flex items-center justify-center h-full"
+              style={{ color: '#56687a', fontSize: '0.75rem' }}
+            >
               Select a session to view terminal
             </div>
           )}
@@ -112,7 +138,8 @@ export function ActiveSession({ sessionId, onClosed }: ActiveSessionProps) {
         {/* File Explorer — always mounted to preserve navigation state */}
         <div
           style={{
-            position: 'absolute', inset: 0,
+            position: 'absolute',
+            inset: 0,
             visibility: activeTab === 'explorer' ? 'visible' : 'hidden',
             pointerEvents: activeTab === 'explorer' ? 'auto' : 'none',
           }}
@@ -123,7 +150,10 @@ export function ActiveSession({ sessionId, onClosed }: ActiveSessionProps) {
               hostLabel={activeHost?.label ?? activeHost?.hostname ?? sessionId}
             />
           ) : (
-            <div className="flex items-center justify-center h-full" style={{ color: '#56687a', fontSize: '0.75rem' }}>
+            <div
+              className="flex items-center justify-center h-full"
+              style={{ color: '#56687a', fontSize: '0.75rem' }}
+            >
               Select a session to view files
             </div>
           )}
@@ -142,16 +172,21 @@ export function ActiveSession({ sessionId, onClosed }: ActiveSessionProps) {
             style={{
               display: 'inline-block',
               background:
-                activeSession?.status === 'connected'    ? '#22c55e' :
-                activeSession?.status === 'connecting'   ? '#f59e0b' :
-                activeSession?.status === 'error'        ? '#ff6b6b' :
-                                                           '#56687a',
+                activeSession?.status === 'connected'
+                  ? '#22c55e'
+                  : activeSession?.status === 'connecting'
+                    ? '#f59e0b'
+                    : activeSession?.status === 'error'
+                      ? '#ff6b6b'
+                      : '#56687a',
             }}
           />
           <span style={{ color: '#a8e8ff' }}>
             {(
               activeHost?.label ||
-              (activeHost ? `${activeHost.username}@${activeHost.hostname}:${activeHost.port}` : null) ||
+              (activeHost
+                ? `${activeHost.username}@${activeHost.hostname}:${activeHost.port}`
+                : null) ||
               sessionId
             ).toUpperCase()}
           </span>
@@ -159,7 +194,16 @@ export function ActiveSession({ sessionId, onClosed }: ActiveSessionProps) {
         <StatusSep />
         {/* Latency */}
         <StatusItem>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#56687a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#56687a"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
           </svg>
           <span>{activeSession?.latencyMs != null ? `${activeSession.latencyMs}ms` : '—'}</span>
@@ -167,7 +211,16 @@ export function ActiveSession({ sessionId, onClosed }: ActiveSessionProps) {
         <StatusSep />
         {/* Path */}
         <StatusItem>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#56687a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#56687a"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
           </svg>
           <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>
@@ -175,19 +228,27 @@ export function ActiveSession({ sessionId, onClosed }: ActiveSessionProps) {
           </span>
         </StatusItem>
         <StatusSep />
-        <StatusItem><span>UTF-8</span></StatusItem>
+        <StatusItem>
+          <span>UTF-8</span>
+        </StatusItem>
         <StatusSep />
-        <StatusItem><span>LF</span></StatusItem>
+        <StatusItem>
+          <span>LF</span>
+        </StatusItem>
         <StatusSep />
         <StatusItem>
           <span
             style={{
               color:
-                activeSession?.status === 'connected'    ? '#22c55e' :
-                activeSession?.status === 'connecting'   ? '#f59e0b' :
-                activeSession?.status === 'error'        ? '#ff6b6b' :
-                activeSession?.status === 'disconnected' ? '#56687a' :
-                                                           '#56687a',
+                activeSession?.status === 'connected'
+                  ? '#22c55e'
+                  : activeSession?.status === 'connecting'
+                    ? '#f59e0b'
+                    : activeSession?.status === 'error'
+                      ? '#ff6b6b'
+                      : activeSession?.status === 'disconnected'
+                        ? '#56687a'
+                        : '#56687a',
             }}
           >
             {activeSession?.status?.toUpperCase() ?? 'NO SESSION'}
@@ -202,7 +263,16 @@ function StatusItem({ children }: { children: React.ReactNode }) {
   return (
     <div
       className="flex items-center gap-1 px-3"
-      style={{ color: '#56687a', fontSize: '0.55rem', fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', height: '100%', borderRight: '1px solid #1d2126' }}
+      style={{
+        color: '#56687a',
+        fontSize: '0.55rem',
+        fontFamily: "'Inter', sans-serif",
+        fontWeight: 600,
+        letterSpacing: '0.1em',
+        textTransform: 'uppercase',
+        height: '100%',
+        borderRight: '1px solid #1d2126',
+      }}
     >
       {children}
     </div>

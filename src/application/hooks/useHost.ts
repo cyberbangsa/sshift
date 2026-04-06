@@ -4,7 +4,19 @@ import type { Host } from '@/domain/entities'
 import type { IHostRepository } from '@/domain/repositories'
 
 export function useHost(repository: IHostRepository) {
-  const { hosts, selectedHostId, isLoading, error, setHosts, addHost, updateHost, removeHost, selectHost, setLoading, setError } = useHostStore()
+  const {
+    hosts,
+    selectedHostId,
+    isLoading,
+    error,
+    setHosts,
+    addHost,
+    updateHost,
+    removeHost,
+    selectHost,
+    setLoading,
+    setError,
+  } = useHostStore()
 
   const loadHosts = useCallback(async () => {
     setLoading(true)

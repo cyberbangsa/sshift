@@ -24,8 +24,14 @@ export function VaultEntryForm({ isOpen, onClose, onSave }: VaultEntryFormProps)
   }
 
   const handleSubmit = async () => {
-    if (!name.trim()) { setError('Name is required'); return }
-    if (!content.trim()) { setError('Key content is required — paste or upload a key file'); return }
+    if (!name.trim()) {
+      setError('Name is required')
+      return
+    }
+    if (!content.trim()) {
+      setError('Key content is required — paste or upload a key file')
+      return
+    }
     setError(null)
     setIsSaving(true)
     try {
@@ -44,12 +50,7 @@ export function VaultEntryForm({ isOpen, onClose, onSave }: VaultEntryFormProps)
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Add Key to Vault">
       <div className="flex flex-col gap-3">
-        <Input
-          label="Name"
-          value={name}
-          onChange={setName}
-          placeholder="e.g. My AWS Key"
-        />
+        <Input label="Name" value={name} onChange={setName} placeholder="e.g. My AWS Key" />
 
         {/* Type selector */}
         <div className="flex flex-col gap-1">
@@ -106,7 +107,9 @@ export function VaultEntryForm({ isOpen, onClose, onSave }: VaultEntryFormProps)
         </div>
 
         {error && (
-          <p className="text-[0.6875rem]" style={{ color: '#ff6b6b' }}>{error}</p>
+          <p className="text-[0.6875rem]" style={{ color: '#ff6b6b' }}>
+            {error}
+          </p>
         )}
 
         <div className="flex justify-end gap-2 pt-1">

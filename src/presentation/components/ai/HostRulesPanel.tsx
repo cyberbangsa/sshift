@@ -58,7 +58,10 @@ export function HostRulesPanel({ rules, onChange }: HostRulesPanelProps) {
         <div
           key={rule.id}
           className="flex flex-col gap-1 rounded p-2.5"
-          style={{ background: '#161a1e', border: editingId === rule.id ? '1px solid rgba(168,232,255,0.3)' : '1px solid #252a30' }}
+          style={{
+            background: '#161a1e',
+            border: editingId === rule.id ? '1px solid rgba(168,232,255,0.3)' : '1px solid #252a30',
+          }}
         >
           {editingId === rule.id ? (
             <>
@@ -111,7 +114,16 @@ export function HostRulesPanel({ rules, onChange }: HostRulesPanelProps) {
                     className="p-1 rounded hover:bg-white/5 transition-colors"
                     title="Edit"
                   >
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8a9bb0" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <svg
+                      width="11"
+                      height="11"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#8a9bb0"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                     </svg>
@@ -121,14 +133,26 @@ export function HostRulesPanel({ rules, onChange }: HostRulesPanelProps) {
                     className="p-1 rounded hover:bg-white/5 transition-colors"
                     title="Delete"
                   >
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <svg
+                      width="11"
+                      height="11"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#ef4444"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
                       <polyline points="3 6 5 6 21 6" />
                       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
                     </svg>
                   </button>
                 </div>
               </div>
-              <span className="text-[0.6875rem] font-semibold" style={{ ...base, color: '#a8e8ff' }}>
+              <span
+                className="text-[0.6875rem] font-semibold"
+                style={{ ...base, color: '#a8e8ff' }}
+              >
                 {rule.name}
               </span>
               <span className="text-[0.6rem] leading-relaxed" style={{ ...base, color: '#8a9bb0' }}>
@@ -183,9 +207,22 @@ export function HostRulesPanel({ rules, onChange }: HostRulesPanelProps) {
         <button
           onClick={startAdd}
           className="flex items-center justify-center gap-1.5 px-2.5 py-2 rounded text-[0.6rem] font-semibold transition-colors hover:border-[rgba(168,232,255,0.2)]"
-          style={{ ...base, background: 'transparent', border: '1px dashed #252a30', color: '#56687a' }}
+          style={{
+            ...base,
+            background: 'transparent',
+            border: '1px dashed #252a30',
+            color: '#56687a',
+          }}
         >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          >
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>

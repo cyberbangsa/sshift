@@ -33,12 +33,13 @@ export function HostItem({
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-text-primary truncate">
-            {host.label}
-          </span>
+          <span className="text-sm font-medium text-text-primary truncate">{host.label}</span>
           {isConnected && <Badge variant="success">Connected</Badge>}
           {isConnecting && (
-            <span className="text-[0.6rem] font-semibold tracking-wider" style={{ color: '#a8e8ff' }}>
+            <span
+              className="text-[0.6rem] font-semibold tracking-wider"
+              style={{ color: '#a8e8ff' }}
+            >
               CONNECTING…
             </span>
           )}

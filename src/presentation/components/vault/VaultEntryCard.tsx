@@ -22,12 +22,30 @@ const TYPE_COLOR: Record<VaultEntry['type'], string> = {
 function KeyIcon({ type }: { type: VaultEntry['type'] }) {
   const color = TYPE_COLOR[type]
   return type === 'privateKey' ? (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
     </svg>
   ) : (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <circle cx="11" cy="11" r="8" />
       <path d="M21 21l-4.35-4.35" />
     </svg>
@@ -60,14 +78,20 @@ export function VaultEntryCard({ entry, onRename, onDelete }: VaultEntryCardProp
       <div className="flex-1 min-w-0">
         {isRenaming ? (
           <div className="flex items-center gap-2">
-            <Input
-              value={newName}
-              onChange={setNewName}
-              placeholder="Entry name"
-              autoFocus
-            />
-            <Button variant="primary" size="sm" onClick={handleRename}>Save</Button>
-            <Button variant="ghost" size="sm" onClick={() => { setIsRenaming(false); setNewName(entry.name) }}>×</Button>
+            <Input value={newName} onChange={setNewName} placeholder="Entry name" autoFocus />
+            <Button variant="primary" size="sm" onClick={handleRename}>
+              Save
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setIsRenaming(false)
+                setNewName(entry.name)
+              }}
+            >
+              ×
+            </Button>
           </div>
         ) : (
           <>
@@ -106,7 +130,16 @@ export function VaultEntryCard({ entry, onRename, onDelete }: VaultEntryCardProp
             title="Rename"
             style={{ color: '#8a9bb0' }}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
             </svg>
@@ -117,7 +150,16 @@ export function VaultEntryCard({ entry, onRename, onDelete }: VaultEntryCardProp
             title="Delete"
             style={{ color: '#ff6b6b' }}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <polyline points="3 6 5 6 21 6" />
               <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
               <path d="M10 11v6M14 11v6" />
@@ -130,9 +172,15 @@ export function VaultEntryCard({ entry, onRename, onDelete }: VaultEntryCardProp
       {/* Delete confirmation */}
       {confirmDelete && (
         <div className="shrink-0 flex items-center gap-2">
-          <span className="text-[0.625rem]" style={{ color: '#ff6b6b' }}>Delete?</span>
-          <Button variant="danger" size="sm" onClick={() => onDelete(entry.id)}>Yes</Button>
-          <Button variant="ghost" size="sm" onClick={() => setConfirmDelete(false)}>No</Button>
+          <span className="text-[0.625rem]" style={{ color: '#ff6b6b' }}>
+            Delete?
+          </span>
+          <Button variant="danger" size="sm" onClick={() => onDelete(entry.id)}>
+            Yes
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setConfirmDelete(false)}>
+            No
+          </Button>
         </div>
       )}
     </div>

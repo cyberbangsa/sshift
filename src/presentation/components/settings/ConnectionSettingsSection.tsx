@@ -10,10 +10,16 @@ function Field({ label, description, children }: FieldProps) {
   return (
     <div className="flex items-start justify-between gap-8">
       <div className="flex-1 min-w-0">
-        <p className="text-[0.8125rem] font-medium mb-0.5" style={{ color: '#e2e2e6', fontFamily: "'Inter', sans-serif" }}>
+        <p
+          className="text-[0.8125rem] font-medium mb-0.5"
+          style={{ color: '#e2e2e6', fontFamily: "'Inter', sans-serif" }}
+        >
           {label}
         </p>
-        <p className="text-[0.75rem]" style={{ color: '#56687a', fontFamily: "'Inter', sans-serif" }}>
+        <p
+          className="text-[0.75rem]"
+          style={{ color: '#56687a', fontFamily: "'Inter', sans-serif" }}
+        >
           {description}
         </p>
       </div>

@@ -51,4 +51,3 @@ export const useTerminalStore = create<TerminalStore>((set, get) => ({
 
   getHandle: (sessionId) => get().handles.get(sessionId),
 }))
-

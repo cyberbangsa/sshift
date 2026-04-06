@@ -16,10 +16,17 @@ export class TauriSessionRepository implements ISessionRepository {
       password: host.password ? '***' : undefined,
     }
     console.log('[TauriSessionRepository] connect payload:', JSON.stringify(payload, null, 2))
-    console.log('[TauriSessionRepository] full host entity:', JSON.stringify({
-      ...host,
-      password: host.password ? `***[${host.password.length} chars]` : undefined,
-    }, null, 2))
+    console.log(
+      '[TauriSessionRepository] full host entity:',
+      JSON.stringify(
+        {
+          ...host,
+          password: host.password ? `***[${host.password.length} chars]` : undefined,
+        },
+        null,
+        2,
+      ),
+    )
 
     const session = await invoke<Session>('connect_session', {
       hostId: host.id,
