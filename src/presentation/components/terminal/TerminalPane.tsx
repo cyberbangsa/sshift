@@ -26,9 +26,11 @@ export interface TerminalPaneHandle {
 
 export const TerminalPane = forwardRef<TerminalPaneHandle, TerminalPaneProps>(
   function TerminalPane({ sessionId, onClosed }, ref) {
-    const containerRef = useRef<HTMLDivElement>(null)
-    const terminalRef  = useRef<Terminal | null>(null)
-    const fitAddonRef  = useRef<FitAddon | null>(null)
+    const containerRef  = useRef<HTMLDivElement>(null)
+    const terminalRef   = useRef<Terminal | null>(null)
+    const fitAddonRef   = useRef<FitAddon | null>(null)
+    const onClosedRef   = useRef(onClosed)
+    onClosedRef.current = onClosed
 
     useImperativeHandle(ref, () => ({
       write: (data) => terminalRef.current?.write(data),
@@ -51,9 +53,10 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, TerminalPaneProps>(
         new Promise<string>((resolve) => {
           if (!isTauri) { resolve(''); return }
           // Strip ANSI escape sequences from collected output
+          // eslint-disable-next-line no-control-regex
           const ANSI_RE = /\x1b(?:[@-Z\\-_]|\[[0-9;]*[ -/]*[@-~]|\].*?(?:\x07|\x1b\\))/g
           // Shell prompt pattern — $, #, %, > (possibly coloured), followed by optional space
-          const PROMPT_RE = /[\$#%>]\s*$/
+          const PROMPT_RE = /[$#%>]\s*$/
           let buffer = ''
           let unlisten: (() => void) | undefined
           let finished = false
@@ -149,7 +152,7 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, TerminalPaneProps>(
             } else {
               terminal.write('\r\n\x1b[31m[Connection lost — exit code ' + exitCode + ']\x1b[0m\r\n')
             }
-            onClosed?.(exitCode)
+            onClosedRef.current?.(exitCode)
           }).then((fn) => { unlistenClosed = fn })
         })
       } else {
