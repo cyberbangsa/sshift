@@ -23,15 +23,30 @@ export function Toast({ message, type, onDismiss }: ToastProps) {
   return (
     <div
       className={`fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-lg border px-4 py-3 shadow-lg ${typeClasses[type]}`}
+      style={{ maxWidth: '480px' }}
     >
-      <span className="text-sm">{message}</span>
+      <span className="flex flex-col gap-0.5">
+        <span className="text-sm">{message.split('\n')[0]}</span>
+        {message.includes('\n') && (
+          <span
+            className="text-[0.65rem] opacity-60 font-mono break-all"
+          >
+            {message.split('\n')[1]}
+          </span>
+        )}
+      </span>
       <button
         onClick={onDismiss}
         className="ml-2 opacity-70 hover:opacity-100 transition-opacity"
         aria-label="Dismiss"
       >
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-          <path d="M3 3L9 9M9 3L3 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          <path
+            d="M3 3L9 9M9 3L3 9"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
         </svg>
       </button>
     </div>

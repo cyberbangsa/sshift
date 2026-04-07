@@ -67,8 +67,8 @@ export function useAIAgent(
   // IMPORTANT: fall back to the stable DEFAULT_SESSION_STATE constant (not an
   // inline object literal) so Zustand's snapshot comparison doesn't see a new
   // reference every render, which would cause an infinite update loop.
-  const { messages, isStreaming, error, executionMode } = useAIStore((s) =>
-    (sessionId ? s.sessions.get(sessionId) : undefined) ?? DEFAULT_SESSION_STATE,
+  const { messages, isStreaming, error, executionMode } = useAIStore(
+    (s) => (sessionId ? s.sessions.get(sessionId) : undefined) ?? DEFAULT_SESSION_STATE,
   )
 
   // Use getState() for actions — they are stable references and don't need
@@ -76,11 +76,33 @@ export function useAIAgent(
   const storeActions = useAIStore
 
   // Bound action helpers that always scope to the current sessionId.
-  const addMessage    = useCallback((msg: AIMessage) => { if (sessionId) storeActions.getState().addMessage(sessionId, msg) }, [storeActions, sessionId])
-  const setStreaming   = useCallback((v: boolean)     => { if (sessionId) storeActions.getState().setStreaming(sessionId, v) }, [storeActions, sessionId])
-  const setError       = useCallback((e: string|null) => { if (sessionId) storeActions.getState().setError(sessionId, e) }, [storeActions, sessionId])
-  const clearMessages  = useCallback(()               => { if (sessionId) storeActions.getState().clearMessages(sessionId) }, [storeActions, sessionId])
-  const setExecutionMode = useCallback((mode: ExecutionMode) => { if (sessionId) storeActions.getState().setExecutionMode(sessionId, mode) }, [storeActions, sessionId])
+  const addMessage = useCallback(
+    (msg: AIMessage) => {
+      if (sessionId) storeActions.getState().addMessage(sessionId, msg)
+    },
+    [storeActions, sessionId],
+  )
+  const setStreaming = useCallback(
+    (v: boolean) => {
+      if (sessionId) storeActions.getState().setStreaming(sessionId, v)
+    },
+    [storeActions, sessionId],
+  )
+  const setError = useCallback(
+    (e: string | null) => {
+      if (sessionId) storeActions.getState().setError(sessionId, e)
+    },
+    [storeActions, sessionId],
+  )
+  const clearMessages = useCallback(() => {
+    if (sessionId) storeActions.getState().clearMessages(sessionId)
+  }, [storeActions, sessionId])
+  const setExecutionMode = useCallback(
+    (mode: ExecutionMode) => {
+      if (sessionId) storeActions.getState().setExecutionMode(sessionId, mode)
+    },
+    [storeActions, sessionId],
+  )
 
   const { settings, openRouterApiKey } = useSettingsStore()
   const abortRef = useRef<AbortController | null>(null)
@@ -155,7 +177,11 @@ export function useAIAgent(
         const { content: cleanedContent, command } = extractRunCommand(rawResponse.content)
         // Strip <readfile> tags from displayed content
         const displayContent = cleanedContent.replace(/<readfile>[\s\S]*?<\/readfile>/g, '').trim()
-        const firstMsg: AIMessage = { ...rawResponse, content: displayContent, commandExecuted: command }
+        const firstMsg: AIMessage = {
+          ...rawResponse,
+          content: displayContent,
+          commandExecuted: command,
+        }
         addMessage(firstMsg)
 
         // ── Auto-mode agentic loop ────────────────────────────────────────
@@ -176,9 +202,10 @@ export function useAIAgent(
                 if (signal.aborted) break
                 try {
                   const fileContent = await onReadFile(filePath)
-                  const preview = fileContent.length > 40000
-                    ? fileContent.slice(0, 40000) + '\n...[truncated]'
-                    : fileContent
+                  const preview =
+                    fileContent.length > 40000
+                      ? fileContent.slice(0, 40000) + '\n...[truncated]'
+                      : fileContent
                   feedbackParts.push(`File contents of ${filePath}:\n\`\`\`\n${preview}\n\`\`\``)
                 } catch (e) {
                   feedbackParts.push(`Could not read ${filePath}: ${e}`)
@@ -202,7 +229,8 @@ export function useAIAgent(
             if (signal.aborted || feedbackParts.length === 0) break
 
             const feedbackContent =
-              feedbackParts.join('\n\n') + '\n\n' +
+              feedbackParts.join('\n\n') +
+              '\n\n' +
               'Analyse the above. If the task is complete, summarise the result. ' +
               'If further commands or file reads are needed, issue them now.'
 
@@ -220,7 +248,11 @@ export function useAIAgent(
             if (signal.aborted) break
             const { content: nextCleaned, command: nextCmd } = extractRunCommand(nextRaw.content)
             const nextDisplay = nextCleaned.replace(/<readfile>[\s\S]*?<\/readfile>/g, '').trim()
-            const nextMsg: AIMessage = { ...nextRaw, content: nextDisplay, commandExecuted: nextCmd }
+            const nextMsg: AIMessage = {
+              ...nextRaw,
+              content: nextDisplay,
+              commandExecuted: nextCmd,
+            }
             addMessage(nextMsg)
             localMessages = [...localMessages, nextMsg]
             rawContent = nextRaw.content
@@ -239,7 +271,16 @@ export function useAIAgent(
         setStreaming(false)
       }
     },
-    [aiClient, messages, addMessage, setStreaming, setError, executionMode, onRunCommand, onReadFile],
+    [
+      aiClient,
+      messages,
+      addMessage,
+      setStreaming,
+      setError,
+      executionMode,
+      onRunCommand,
+      onReadFile,
+    ],
   )
 
   return {
@@ -254,4 +295,3 @@ export function useAIAgent(
     setExecutionMode,
   }
 }
-

@@ -5,30 +5,36 @@ import type { Host } from '@/domain/entities'
 /* ── Types ─────────────────────────────────────────────────── */
 
 type PaletteItem =
-  | { kind: 'session';  id: string; label: string; subtext: string }
-  | { kind: 'host';     host: Host }
-  | { kind: 'action';   id: string; label: string; subtext: string; icon: ActionIconName }
+  | { kind: 'session'; id: string; label: string; subtext: string }
+  | { kind: 'host'; host: Host }
+  | { kind: 'action'; id: string; label: string; subtext: string; icon: ActionIconName }
 
 type ActionIconName = 'settings' | 'plus' | 'lock' | 'home' | 'terminal'
 
 interface CommandPaletteProps {
-  isOpen:              boolean
-  onClose:             () => void
-  onConnect:           (host: Host) => void
-  onAddHost:           () => void
-  onOpenSettings:      () => void
-  onNavigateVault:     () => void
+  isOpen: boolean
+  onClose: () => void
+  onConnect: (host: Host) => void
+  onAddHost: () => void
+  onOpenSettings: () => void
+  onNavigateVault: () => void
   onNavigateDashboard: () => void
 }
 
 /* ── Static actions ─────────────────────────────────────────── */
 
-const STATIC_ACTIONS: Array<{ id: string; label: string; subtext: string; icon: ActionIconName }> = [
-  { id: 'add-host',   label: 'Add New Host',    subtext: 'Open the new host form',       icon: 'plus'     },
-  { id: 'settings',   label: 'Open Settings',   subtext: 'AI, terminal & connection config', icon: 'settings' },
-  { id: 'vault',      label: 'Go to Vault',     subtext: 'Manage SSH keys & credentials', icon: 'lock'     },
-  { id: 'dashboard',  label: 'Go to Dashboard', subtext: 'Return to the host grid',      icon: 'home'     },
-]
+const STATIC_ACTIONS: Array<{ id: string; label: string; subtext: string; icon: ActionIconName }> =
+  [
+    { id: 'add-host', label: 'Add New Host', subtext: 'Open the new host form', icon: 'plus' },
+    {
+      id: 'settings',
+      label: 'Open Settings',
+      subtext: 'AI, terminal & connection config',
+      icon: 'settings',
+    },
+    { id: 'vault', label: 'Go to Vault', subtext: 'Manage SSH keys & credentials', icon: 'lock' },
+    { id: 'dashboard', label: 'Go to Dashboard', subtext: 'Return to the host grid', icon: 'home' },
+  ]
 
 /* ── Component ──────────────────────────────────────────────── */
 
@@ -41,12 +47,12 @@ export function CommandPalette({
   onNavigateVault,
   onNavigateDashboard,
 }: CommandPaletteProps) {
-  const [query, setQuery]       = useState('')
-  const [cursor, setCursor]     = useState(0)
-  const inputRef                = useRef<HTMLInputElement>(null)
-  const listRef                 = useRef<HTMLDivElement>(null)
+  const [query, setQuery] = useState('')
+  const [cursor, setCursor] = useState(0)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
 
-  const { hosts }                              = useHostStore()
+  const { hosts } = useHostStore()
   const { sessions, setActiveSession } = useSessionStore()
 
   /* Reset state when opening */
@@ -75,18 +81,18 @@ export function CommandPalette({
       .filter((h) => {
         if (!q) return true
         return (
-          h.label.toLowerCase().includes(q)        ||
-          h.hostname.toLowerCase().includes(q)     ||
-          h.username.toLowerCase().includes(q)     ||
+          h.label.toLowerCase().includes(q) ||
+          h.hostname.toLowerCase().includes(q) ||
+          h.username.toLowerCase().includes(q) ||
           h.tags.some((t) => t.toLowerCase().includes(q))
         )
       })
       .map((h) => ({ kind: 'host', host: h }))
 
     // Static actions — filter by query
-    const actionItems: PaletteItem[] = STATIC_ACTIONS
-      .filter((a) => !q || a.label.toLowerCase().includes(q) || a.subtext.toLowerCase().includes(q))
-      .map((a) => ({ kind: 'action', ...a }))
+    const actionItems: PaletteItem[] = STATIC_ACTIONS.filter(
+      (a) => !q || a.label.toLowerCase().includes(q) || a.subtext.toLowerCase().includes(q),
+    ).map((a) => ({ kind: 'action', ...a }))
 
     return [...sessionItems, ...hostItems, ...actionItems]
   }, [query, sessions, hosts])
@@ -103,32 +109,60 @@ export function CommandPalette({
   }, [cursor])
 
   /* Execute the selected item */
-  const execute = useCallback((item: PaletteItem) => {
-    if (item.kind === 'session') {
-      setActiveSession(item.id)
-    } else if (item.kind === 'host') {
-      onConnect(item.host)
-    } else {
-      switch (item.id) {
-        case 'add-host':   onAddHost();          break
-        case 'settings':   onOpenSettings();     break
-        case 'vault':      onNavigateVault();    break
-        case 'dashboard':  onNavigateDashboard(); break
+  const execute = useCallback(
+    (item: PaletteItem) => {
+      if (item.kind === 'session') {
+        setActiveSession(item.id)
+      } else if (item.kind === 'host') {
+        onConnect(item.host)
+      } else {
+        switch (item.id) {
+          case 'add-host':
+            onAddHost()
+            break
+          case 'settings':
+            onOpenSettings()
+            break
+          case 'vault':
+            onNavigateVault()
+            break
+          case 'dashboard':
+            onNavigateDashboard()
+            break
+        }
       }
-    }
-    onClose()
-  }, [setActiveSession, onConnect, onAddHost, onOpenSettings, onNavigateVault, onNavigateDashboard, onClose])
+      onClose()
+    },
+    [
+      setActiveSession,
+      onConnect,
+      onAddHost,
+      onOpenSettings,
+      onNavigateVault,
+      onNavigateDashboard,
+      onClose,
+    ],
+  )
 
   /* Keyboard navigation */
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if      (e.key === 'Escape')    { onClose(); return }
-    else if (e.key === 'ArrowDown') { e.preventDefault(); setCursor((c) => Math.min(c + 1, items.length - 1)) }
-    else if (e.key === 'ArrowUp')   { e.preventDefault(); setCursor((c) => Math.max(c - 1, 0)) }
-    else if (e.key === 'Enter') {
-      e.preventDefault()
-      if (items[cursor]) execute(items[cursor])
-    }
-  }, [items, cursor, onClose, execute])
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+        return
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setCursor((c) => Math.min(c + 1, items.length - 1))
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setCursor((c) => Math.max(c - 1, 0))
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        if (items[cursor]) execute(items[cursor])
+      }
+    },
+    [items, cursor, onClose, execute],
+  )
 
   if (!isOpen) return null
 
@@ -166,15 +200,29 @@ export function CommandPalette({
           className="flex items-center gap-3 px-4"
           style={{ borderBottom: '1px solid #1d2126', height: 48 }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#56687a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#56687a"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="shrink-0"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
           <input
             ref={inputRef}
             type="text"
             placeholder="Search hosts, sessions, actions…"
             value={query}
-            onChange={(e) => { setQuery(e.target.value); setCursor(0) }}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              setCursor(0)
+            }}
             className="flex-1 bg-transparent outline-none"
             style={{
               fontFamily: "'Inter', sans-serif",
@@ -189,7 +237,12 @@ export function CommandPalette({
               aria-label="Clear"
             >
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                <path d="M4 4L12 12M12 4L4 12" stroke="#8a9bb0" strokeWidth="2" strokeLinecap="round" />
+                <path
+                  d="M4 4L12 12M12 4L4 12"
+                  stroke="#8a9bb0"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
               </svg>
             </button>
           )}
@@ -208,8 +261,18 @@ export function CommandPalette({
               className="flex flex-col items-center justify-center gap-2 py-10"
               style={{ color: '#56687a', fontFamily: "'Inter', sans-serif", fontSize: '0.75rem' }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2d3640" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#2d3640"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
               No results for &ldquo;{query}&rdquo;
             </div>
@@ -235,24 +298,51 @@ export function CommandPalette({
                           className="flex items-center justify-center rounded shrink-0"
                           style={{ width: 28, height: 28, background: 'rgba(34,197,94,0.08)' }}
                         >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="2" y="3" width="20" height="14" rx="2" /><polyline points="8 21 12 17 16 21" />
+                          <svg
+                            width="13"
+                            height="13"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#22c55e"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <rect x="2" y="3" width="20" height="14" rx="2" />
+                            <polyline points="8 21 12 17 16 21" />
                           </svg>
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-[0.75rem] font-semibold truncate" style={{ fontFamily: "'Space Grotesk', sans-serif", color: '#e2e2e6' }}>
+                            <span
+                              className="text-[0.75rem] font-semibold truncate"
+                              style={{
+                                fontFamily: "'Space Grotesk', sans-serif",
+                                color: '#e2e2e6',
+                              }}
+                            >
                               <Highlight text={item.label} query={query} />
                             </span>
-                            <span className="text-[0.55rem] font-mono font-semibold px-1.5 py-0.5 rounded-sm shrink-0" style={{ background: 'rgba(34,197,94,0.12)', color: '#22c55e' }}>
+                            <span
+                              className="text-[0.55rem] font-mono font-semibold px-1.5 py-0.5 rounded-sm shrink-0"
+                              style={{ background: 'rgba(34,197,94,0.12)', color: '#22c55e' }}
+                            >
                               LIVE
                             </span>
                           </div>
-                          <span className="text-[0.625rem] truncate block" style={{ fontFamily: "'JetBrains Mono', monospace", color: '#56687a' }}>
+                          <span
+                            className="text-[0.625rem] truncate block"
+                            style={{ fontFamily: "'JetBrains Mono', monospace", color: '#56687a' }}
+                          >
                             {item.subtext}
                           </span>
                         </div>
-                        <span className="text-[0.6rem] shrink-0" style={{ color: '#3c494e', fontFamily: "'Inter', sans-serif" }}>SWITCH</span>
+                        <span
+                          className="text-[0.6rem] shrink-0"
+                          style={{ color: '#3c494e', fontFamily: "'Inter', sans-serif" }}
+                        >
+                          SWITCH
+                        </span>
                       </Row>
                     )
                   })}
@@ -268,7 +358,9 @@ export function CommandPalette({
                       globalIndex++
                       const idx = globalIndex
                       const isActive = idx === cursor
-                      const connectedSessionIds = new Set(Array.from(sessions.values()).map((s) => s.hostId))
+                      const connectedSessionIds = new Set(
+                        Array.from(sessions.values()).map((s) => s.hostId),
+                      )
                       const isConnected = connectedSessionIds.has(item.host.id)
                       return (
                         <Row
@@ -281,27 +373,58 @@ export function CommandPalette({
                             className="flex items-center justify-center rounded shrink-0"
                             style={{ width: 28, height: 28, background: 'rgba(168,232,255,0.07)' }}
                           >
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a8e8ff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                              <rect x="2" y="3" width="20" height="14" rx="2" /><polyline points="8 21 12 17 16 21" />
+                            <svg
+                              width="13"
+                              height="13"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="#a8e8ff"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <rect x="2" y="3" width="20" height="14" rx="2" />
+                              <polyline points="8 21 12 17 16 21" />
                             </svg>
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="text-[0.75rem] font-semibold truncate" style={{ fontFamily: "'Space Grotesk', sans-serif", color: '#e2e2e6' }}>
+                              <span
+                                className="text-[0.75rem] font-semibold truncate"
+                                style={{
+                                  fontFamily: "'Space Grotesk', sans-serif",
+                                  color: '#e2e2e6',
+                                }}
+                              >
                                 <Highlight text={item.host.label} query={query} />
                               </span>
                               {isConnected && (
-                                <span className="text-[0.55rem] font-mono font-semibold px-1.5 py-0.5 rounded-sm shrink-0" style={{ background: 'rgba(74,222,128,0.1)', color: '#4ade80' }}>
+                                <span
+                                  className="text-[0.55rem] font-mono font-semibold px-1.5 py-0.5 rounded-sm shrink-0"
+                                  style={{ background: 'rgba(74,222,128,0.1)', color: '#4ade80' }}
+                                >
                                   CONNECTED
                                 </span>
                               )}
                               <AuthBadge method={item.host.authMethod} />
                             </div>
-                            <span className="text-[0.625rem] truncate block" style={{ fontFamily: "'JetBrains Mono', monospace", color: '#56687a' }}>
-                              <Highlight text={`${item.host.username}@${item.host.hostname}:${item.host.port}`} query={query} />
+                            <span
+                              className="text-[0.625rem] truncate block"
+                              style={{
+                                fontFamily: "'JetBrains Mono', monospace",
+                                color: '#56687a',
+                              }}
+                            >
+                              <Highlight
+                                text={`${item.host.username}@${item.host.hostname}:${item.host.port}`}
+                                query={query}
+                              />
                             </span>
                           </div>
-                          <span className="text-[0.6rem] shrink-0" style={{ color: '#3c494e', fontFamily: "'Inter', sans-serif" }}>
+                          <span
+                            className="text-[0.6rem] shrink-0"
+                            style={{ color: '#3c494e', fontFamily: "'Inter', sans-serif" }}
+                          >
                             {isConnected ? 'OPEN' : 'CONNECT'}
                           </span>
                         </Row>
@@ -314,7 +437,9 @@ export function CommandPalette({
               {filteredActionCount > 0 && (
                 <Section label="ACTIONS">
                   {items
-                    .filter((i): i is Extract<PaletteItem, { kind: 'action' }> => i.kind === 'action')
+                    .filter(
+                      (i): i is Extract<PaletteItem, { kind: 'action' }> => i.kind === 'action',
+                    )
                     .map((item) => {
                       globalIndex++
                       const idx = globalIndex
@@ -333,14 +458,28 @@ export function CommandPalette({
                             <ActionIcon name={item.icon} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <span className="text-[0.75rem] font-semibold block truncate" style={{ fontFamily: "'Space Grotesk', sans-serif", color: '#e2e2e6' }}>
+                            <span
+                              className="text-[0.75rem] font-semibold block truncate"
+                              style={{
+                                fontFamily: "'Space Grotesk', sans-serif",
+                                color: '#e2e2e6',
+                              }}
+                            >
                               <Highlight text={item.label} query={query} />
                             </span>
-                            <span className="text-[0.625rem] block truncate" style={{ fontFamily: "'Inter', sans-serif", color: '#56687a' }}>
+                            <span
+                              className="text-[0.625rem] block truncate"
+                              style={{ fontFamily: "'Inter', sans-serif", color: '#56687a' }}
+                            >
                               {item.subtext}
                             </span>
                           </div>
-                          <span className="text-[0.6rem] shrink-0" style={{ color: '#3c494e', fontFamily: "'Inter', sans-serif" }}>RUN</span>
+                          <span
+                            className="text-[0.6rem] shrink-0"
+                            style={{ color: '#3c494e', fontFamily: "'Inter', sans-serif" }}
+                          >
+                            RUN
+                          </span>
                         </Row>
                       )
                     })}
@@ -416,7 +555,10 @@ function FooterHint({ keys, label }: { keys: string[]; label: string }) {
           {k}
         </kbd>
       ))}
-      <span className="text-[0.6rem] ml-1" style={{ color: '#3c494e', fontFamily: "'Inter', sans-serif" }}>
+      <span
+        className="text-[0.6rem] ml-1"
+        style={{ color: '#3c494e', fontFamily: "'Inter', sans-serif" }}
+      >
         {label}
       </span>
     </div>
@@ -440,33 +582,49 @@ function AuthBadge({ method }: { method: Host['authMethod'] }) {
 
 function ActionIcon({ name }: { name: ActionIconName }) {
   const stroke = '#8a9bb0'
-  const props = { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke, strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
-  if (name === 'settings') return (
-    <svg {...props}>
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-    </svg>
-  )
-  if (name === 'plus') return (
-    <svg {...props}>
-      <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-  )
-  if (name === 'lock') return (
-    <svg {...props}>
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
-  )
-  if (name === 'home') return (
-    <svg {...props}>
-      <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-      <polyline points="9 22 9 12 15 12 15 22" />
-    </svg>
-  )
+  const props = {
+    width: 13,
+    height: 13,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke,
+    strokeWidth: 1.8,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+  }
+  if (name === 'settings')
+    return (
+      <svg {...props}>
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+      </svg>
+    )
+  if (name === 'plus')
+    return (
+      <svg {...props}>
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+    )
+  if (name === 'lock')
+    return (
+      <svg {...props}>
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      </svg>
+    )
+  if (name === 'home')
+    return (
+      <svg {...props}>
+        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
+      </svg>
+    )
   // terminal
   return (
     <svg {...props}>
-      <polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" />
+      <polyline points="4 17 10 11 4 5" />
+      <line x1="12" y1="19" x2="20" y2="19" />
     </svg>
   )
 }

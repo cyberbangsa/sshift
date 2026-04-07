@@ -52,7 +52,9 @@ export const useAIStore = create<AIStore>((set, get) => ({
   sessions: new Map(),
 
   addMessage: (sessionId, message) =>
-    set((state) => updateSession(state, sessionId, (s) => ({ messages: [...s.messages, message] }))),
+    set((state) =>
+      updateSession(state, sessionId, (s) => ({ messages: [...s.messages, message] })),
+    ),
 
   setStreaming: (sessionId, isStreaming) =>
     set((state) => updateSession(state, sessionId, () => ({ isStreaming }))),
@@ -73,6 +75,5 @@ export const useAIStore = create<AIStore>((set, get) => ({
       return { sessions }
     }),
 
-  getSessionState: (sessionId) =>
-    get().sessions.get(sessionId) ?? { ...DEFAULT_SESSION_STATE },
+  getSessionState: (sessionId) => get().sessions.get(sessionId) ?? { ...DEFAULT_SESSION_STATE },
 }))

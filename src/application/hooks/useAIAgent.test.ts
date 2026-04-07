@@ -60,9 +60,7 @@ describe('useAIAgent', () => {
   it('should set error when API request fails', async () => {
     useSettingsStore.setState({ openRouterApiKey: 'sk-test-key' })
 
-    vi.spyOn(global, 'fetch').mockResolvedValueOnce(
-      new Response('Unauthorized', { status: 401 }),
-    )
+    vi.spyOn(global, 'fetch').mockResolvedValueOnce(new Response('Unauthorized', { status: 401 }))
 
     const { result } = renderHook(() => useAIAgent(TEST_SESSION))
 
@@ -79,7 +77,9 @@ describe('useAIAgent', () => {
     useSettingsStore.setState({ openRouterApiKey: 'sk-test-key' })
 
     let resolveResponse!: (v: Response) => void
-    const pending = new Promise<Response>((r) => { resolveResponse = r })
+    const pending = new Promise<Response>((r) => {
+      resolveResponse = r
+    })
     vi.spyOn(global, 'fetch').mockReturnValueOnce(pending)
 
     const { result } = renderHook(() => useAIAgent(TEST_SESSION))
@@ -90,7 +90,9 @@ describe('useAIAgent', () => {
     })
 
     // Resolve immediately
-    resolveResponse(new Response(JSON.stringify({ choices: [{ message: { content: 'hi' } }] }), { status: 200 }))
+    resolveResponse(
+      new Response(JSON.stringify({ choices: [{ message: { content: 'hi' } }] }), { status: 200 }),
+    )
     await sendPromise
 
     expect(result.current.isStreaming).toBe(false)
@@ -121,7 +123,9 @@ describe('useAIAgent', () => {
     useSettingsStore.setState({ openRouterApiKey: 'sk-test-key' })
 
     vi.spyOn(global, 'fetch').mockResolvedValueOnce(
-      new Response(JSON.stringify({ choices: [{ message: { content: 'reply for session 1' } }] }), { status: 200 }),
+      new Response(JSON.stringify({ choices: [{ message: { content: 'reply for session 1' } }] }), {
+        status: 200,
+      }),
     )
 
     const { result: result1 } = renderHook(() => useAIAgent('session-1'))
@@ -136,4 +140,3 @@ describe('useAIAgent', () => {
     expect(result2.current.messages).toHaveLength(0)
   })
 })
-

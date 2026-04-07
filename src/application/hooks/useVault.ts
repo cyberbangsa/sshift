@@ -4,8 +4,17 @@ import type { VaultEntryType } from '@/domain/entities'
 import type { IVaultRepository } from '@/domain/repositories'
 
 export function useVault(repository: IVaultRepository) {
-  const { entries, isLoading, error, setEntries, addEntry, updateEntry, removeEntry, setLoading, setError } =
-    useVaultStore()
+  const {
+    entries,
+    isLoading,
+    error,
+    setEntries,
+    addEntry,
+    updateEntry,
+    removeEntry,
+    setLoading,
+    setError,
+  } = useVaultStore()
 
   const loadVault = useCallback(async () => {
     setLoading(true)

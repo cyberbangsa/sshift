@@ -3,9 +3,9 @@ import { useSettingsStore } from '@/application/stores'
 
 const PROVIDERS = [
   { id: 'openrouter', label: 'OpenRouter', available: true },
-  { id: 'openai',     label: 'OpenAI (GPT)',   available: false },
-  { id: 'google',     label: 'Google Gemini',  available: false },
-  { id: 'anthropic',  label: 'Anthropic Claude', available: false },
+  { id: 'openai', label: 'OpenAI (GPT)', available: false },
+  { id: 'google', label: 'Google Gemini', available: false },
+  { id: 'anthropic', label: 'Anthropic Claude', available: false },
 ] as const
 
 const POPULAR_MODELS = [
@@ -17,12 +17,22 @@ const POPULAR_MODELS = [
 ]
 
 export function AISettingsSection() {
-  const { settings, openRouterApiKey, isApiKeyLoaded, isSaving, error, updateSettings, loadApiKey, saveApiKey, deleteApiKey, clearError } =
-    useSettingsStore()
+  const {
+    settings,
+    openRouterApiKey,
+    isApiKeyLoaded,
+    isSaving,
+    error,
+    updateSettings,
+    loadApiKey,
+    saveApiKey,
+    deleteApiKey,
+    clearError,
+  } = useSettingsStore()
 
-  const [keyDraft, setKeyDraft]         = useState('')
-  const [showKey, setShowKey]           = useState(false)
-  const [saveSuccess, setSaveSuccess]   = useState(false)
+  const [keyDraft, setKeyDraft] = useState('')
+  const [showKey, setShowKey] = useState(false)
+  const [saveSuccess, setSaveSuccess] = useState(false)
 
   useEffect(() => {
     if (!isApiKeyLoaded) {
@@ -53,7 +63,10 @@ export function AISettingsSection() {
     <div className="flex flex-col gap-8 max-w-2xl">
       {/* Provider chips */}
       <section>
-        <h3 className="text-[0.6875rem] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: '#56687a' }}>
+        <h3
+          className="text-[0.6875rem] font-semibold tracking-[0.12em] uppercase mb-3"
+          style={{ color: '#56687a' }}
+        >
           AI Provider
         </h3>
         <div className="flex flex-wrap gap-2">
@@ -62,8 +75,10 @@ export function AISettingsSection() {
               key={p.id}
               className="flex items-center gap-2 px-3 py-1.5 rounded-full text-[0.75rem] font-medium"
               style={{
-                background: p.id === 'openrouter' ? 'rgba(168,232,255,0.1)' : 'rgba(255,255,255,0.03)',
-                border: p.id === 'openrouter' ? '1px solid rgba(168,232,255,0.3)' : '1px solid #1d2126',
+                background:
+                  p.id === 'openrouter' ? 'rgba(168,232,255,0.1)' : 'rgba(255,255,255,0.03)',
+                border:
+                  p.id === 'openrouter' ? '1px solid rgba(168,232,255,0.3)' : '1px solid #1d2126',
                 color: p.id === 'openrouter' ? '#a8e8ff' : '#56687a',
                 fontFamily: "'Inter', sans-serif",
               }}
@@ -84,10 +99,16 @@ export function AISettingsSection() {
 
       {/* OpenRouter API Key */}
       <section>
-        <h3 className="text-[0.6875rem] font-semibold tracking-[0.12em] uppercase mb-1" style={{ color: '#56687a' }}>
+        <h3
+          className="text-[0.6875rem] font-semibold tracking-[0.12em] uppercase mb-1"
+          style={{ color: '#56687a' }}
+        >
           OpenRouter API Key
         </h3>
-        <p className="text-[0.75rem] mb-3" style={{ color: '#56687a', fontFamily: "'Inter', sans-serif" }}>
+        <p
+          className="text-[0.75rem] mb-3"
+          style={{ color: '#56687a', fontFamily: "'Inter', sans-serif" }}
+        >
           Stored securely in the OS keychain. Get your key at{' '}
           <a
             href="https://openrouter.ai/keys"
@@ -108,7 +129,10 @@ export function AISettingsSection() {
             style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}
           >
             <div className="flex items-center gap-2 min-w-0">
-              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: '#22c55e' }} />
+              <span
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{ background: '#22c55e' }}
+              />
               <span className="text-[0.75rem] font-mono truncate" style={{ color: '#8a9bb0' }}>
                 {showKey ? openRouterApiKey : `sk-or-v1-${'•'.repeat(24)}`}
               </span>
@@ -139,7 +163,16 @@ export function AISettingsSection() {
             className="flex-1 flex items-center gap-2 px-3 py-2 rounded"
             style={{ background: '#161a1e', border: '1px solid #1d2126' }}
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#56687a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#56687a"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
             </svg>
             <input
@@ -149,7 +182,11 @@ export function AISettingsSection() {
               onChange={(e) => setKeyDraft(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSaveKey()}
               className="flex-1 bg-transparent outline-none text-[0.8125rem]"
-              style={{ color: '#e2e2e6', fontFamily: "'JetBrains Mono', monospace", caretColor: '#a8e8ff' }}
+              style={{
+                color: '#e2e2e6',
+                fontFamily: "'JetBrains Mono', monospace",
+                caretColor: '#a8e8ff',
+              }}
             />
           </div>
           <button
@@ -169,7 +206,10 @@ export function AISettingsSection() {
         </div>
 
         {error && (
-          <p className="mt-2 text-[0.75rem]" style={{ color: '#f87171', fontFamily: "'Inter', sans-serif" }}>
+          <p
+            className="mt-2 text-[0.75rem]"
+            style={{ color: '#f87171', fontFamily: "'Inter', sans-serif" }}
+          >
             {error}
           </p>
         )}
@@ -177,14 +217,27 @@ export function AISettingsSection() {
 
       {/* Model */}
       <section>
-        <h3 className="text-[0.6875rem] font-semibold tracking-[0.12em] uppercase mb-1" style={{ color: '#56687a' }}>
+        <h3
+          className="text-[0.6875rem] font-semibold tracking-[0.12em] uppercase mb-1"
+          style={{ color: '#56687a' }}
+        >
           Model
         </h3>
-        <p className="text-[0.75rem] mb-3" style={{ color: '#56687a', fontFamily: "'Inter', sans-serif" }}>
+        <p
+          className="text-[0.75rem] mb-3"
+          style={{ color: '#56687a', fontFamily: "'Inter', sans-serif" }}
+        >
           Any model available on OpenRouter. Browse at{' '}
-          <a href="https://openrouter.ai/models" target="_blank" rel="noopener noreferrer" style={{ color: '#a8e8ff' }} className="hover:underline">
+          <a
+            href="https://openrouter.ai/models"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#a8e8ff' }}
+            className="hover:underline"
+          >
             openrouter.ai/models
-          </a>.
+          </a>
+          .
         </p>
         <div
           className="flex items-center gap-2 px-3 py-2 rounded mb-2"
@@ -195,7 +248,11 @@ export function AISettingsSection() {
             value={settings.aiModel}
             onChange={(e) => updateSettings({ aiModel: e.target.value })}
             className="flex-1 bg-transparent outline-none text-[0.8125rem]"
-            style={{ color: '#e2e2e6', fontFamily: "'JetBrains Mono', monospace", caretColor: '#a8e8ff' }}
+            style={{
+              color: '#e2e2e6',
+              fontFamily: "'JetBrains Mono', monospace",
+              caretColor: '#a8e8ff',
+            }}
           />
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -206,7 +263,8 @@ export function AISettingsSection() {
               className="text-[0.7rem] px-2 py-1 rounded transition-colors hover:bg-white/5"
               style={{
                 background: settings.aiModel === m ? 'rgba(168,232,255,0.1)' : 'transparent',
-                border: settings.aiModel === m ? '1px solid rgba(168,232,255,0.25)' : '1px solid #1d2126',
+                border:
+                  settings.aiModel === m ? '1px solid rgba(168,232,255,0.25)' : '1px solid #1d2126',
                 color: settings.aiModel === m ? '#a8e8ff' : '#56687a',
                 fontFamily: "'JetBrains Mono', monospace",
               }}
@@ -219,7 +277,10 @@ export function AISettingsSection() {
 
       {/* Max Tokens */}
       <section>
-        <h3 className="text-[0.6875rem] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: '#56687a' }}>
+        <h3
+          className="text-[0.6875rem] font-semibold tracking-[0.12em] uppercase mb-3"
+          style={{ color: '#56687a' }}
+        >
           Max Response Tokens
         </h3>
         <div className="flex items-center gap-4">
@@ -234,7 +295,12 @@ export function AISettingsSection() {
           />
           <div
             className="w-[72px] px-2 py-1.5 rounded text-center text-[0.8125rem]"
-            style={{ background: '#161a1e', border: '1px solid #1d2126', color: '#e2e2e6', fontFamily: "'JetBrains Mono', monospace" }}
+            style={{
+              background: '#161a1e',
+              border: '1px solid #1d2126',
+              color: '#e2e2e6',
+              fontFamily: "'JetBrains Mono', monospace",
+            }}
           >
             {settings.aiMaxTokens.toLocaleString()}
           </div>
@@ -243,10 +309,16 @@ export function AISettingsSection() {
 
       {/* History Length */}
       <section>
-        <h3 className="text-[0.6875rem] font-semibold tracking-[0.12em] uppercase mb-1" style={{ color: '#56687a' }}>
+        <h3
+          className="text-[0.6875rem] font-semibold tracking-[0.12em] uppercase mb-1"
+          style={{ color: '#56687a' }}
+        >
           Context History Length
         </h3>
-        <p className="text-[0.75rem] mb-3" style={{ color: '#56687a', fontFamily: "'Inter', sans-serif" }}>
+        <p
+          className="text-[0.75rem] mb-3"
+          style={{ color: '#56687a', fontFamily: "'Inter', sans-serif" }}
+        >
           Number of previous messages sent as context with each request.
         </p>
         <div className="flex items-center gap-4">
@@ -261,7 +333,12 @@ export function AISettingsSection() {
           />
           <div
             className="w-[72px] px-2 py-1.5 rounded text-center text-[0.8125rem]"
-            style={{ background: '#161a1e', border: '1px solid #1d2126', color: '#e2e2e6', fontFamily: "'JetBrains Mono', monospace" }}
+            style={{
+              background: '#161a1e',
+              border: '1px solid #1d2126',
+              color: '#e2e2e6',
+              fontFamily: "'JetBrains Mono', monospace",
+            }}
           >
             {settings.aiHistoryLength}
           </div>
@@ -270,10 +347,16 @@ export function AISettingsSection() {
 
       {/* System Prompt */}
       <section>
-        <h3 className="text-[0.6875rem] font-semibold tracking-[0.12em] uppercase mb-1" style={{ color: '#56687a' }}>
+        <h3
+          className="text-[0.6875rem] font-semibold tracking-[0.12em] uppercase mb-1"
+          style={{ color: '#56687a' }}
+        >
           System Prompt
         </h3>
-        <p className="text-[0.75rem] mb-3" style={{ color: '#56687a', fontFamily: "'Inter', sans-serif" }}>
+        <p
+          className="text-[0.75rem] mb-3"
+          style={{ color: '#56687a', fontFamily: "'Inter', sans-serif" }}
+        >
           Customize how the AI assistant behaves.
         </p>
         <textarea

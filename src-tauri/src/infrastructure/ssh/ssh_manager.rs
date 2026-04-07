@@ -2,11 +2,23 @@
 /// Each session runs in its own std::thread that owns the ssh2 Session + Channel
 /// (solving ssh2's lifetime constraints). Commands are sent via SyncSender; output
 /// is streamed back to the frontend via Tauri events.
+
+/// Ensures a key file ends with a Unix newline.
+/// libssh2's OpenSSH parser can silently mis-derive the public key from
+/// files that lack a trailing `\n`, causing server-side rejection errors.
+fn normalize_key_file(path: &str) {
+    if let Ok(bytes) = std::fs::read(path) {
+        if !bytes.is_empty() && bytes.last() != Some(&b'\n') {
+            let mut fixed = bytes;
+            fixed.push(b'\n');
+            let _ = std::fs::write(path, fixed);
+        }
+    }
+}
 use ssh2::Session as Ssh2Session;
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::net::TcpStream;
-use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{sync_channel, Receiver, SyncSender, TryRecvError};
 use std::time::{Duration, Instant};
@@ -37,6 +49,12 @@ struct SessionEntry {
 
 pub struct SshManager {
     sessions: Arc<Mutex<HashMap<String, SessionEntry>>>,
+}
+
+impl Default for SshManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl SshManager {
@@ -233,9 +251,37 @@ fn connection_thread(
                 return;
             }
             Some(path) => {
-                let pub_key = host.public_key_path.as_deref().map(Path::new);
+                normalize_key_file(path);
                 let passphrase = host.key_passphrase.as_deref();
-                ssh.userauth_pubkey_file(&host.username, pub_key, Path::new(path), passphrase)
+                eprintln!(
+                    "[SSHift] auth: user={} path={} has_passphrase={}",
+                    host.username, path, passphrase.is_some()
+                );
+                match crate::infrastructure::ssh::decode_key_for_libssh2(path, passphrase) {
+                    Err(decode_err) => {
+                        eprintln!("[SSHift] Key decode error: {decode_err}");
+                        let _ = result_tx.send(Err(RepositoryError::AuthenticationFailed(
+                            format!("Auth failed for '{}': {decode_err}", host.username),
+                        )));
+                        return;
+                    }
+                    Ok((key_pem, effective_passphrase)) => {
+                        eprintln!(
+                            "[SSHift] Key decoded OK, passing to libssh2 (passphrase={})",
+                            effective_passphrase.is_some()
+                        );
+                        let result = ssh.userauth_pubkey_memory(
+                            &host.username,
+                            None,
+                            &key_pem,
+                            effective_passphrase.as_deref(),
+                        );
+                        if let Err(ref e) = result {
+                            eprintln!("[SSHift] userauth_pubkey_memory FAILED: {e}");
+                        }
+                        result
+                    }
+                }
             }
         },
     };

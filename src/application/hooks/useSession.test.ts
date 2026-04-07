@@ -33,14 +33,14 @@ describe('useSession', () => {
     const { result } = renderHook(() => useSession(repository))
     const host = createHost()
 
-    let sessionId: string
+    let sessionId: string = ''
     await act(async () => {
       const session = await result.current.connectHost(host)
       sessionId = session.id
     })
 
     await act(async () => {
-      await result.current.disconnectSession(sessionId!)
+      await result.current.disconnectSession(sessionId)
     })
 
     expect(result.current.sessions).toHaveLength(0)
@@ -50,12 +50,12 @@ describe('useSession', () => {
   it('should execute a command on a session', async () => {
     const { result } = renderHook(() => useSession(repository))
 
-    let output: string
+    let output: string = ''
     await act(async () => {
       output = await result.current.executeCommand('session-1', 'ls')
     })
 
-    expect(output!).toBe('mock command output')
+    expect(output).toBe('mock command output')
   })
 
   it('should throw when connecting to unreachable host', async () => {

@@ -6,19 +6,10 @@ interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChan
   onChange: (value: string) => void
 }
 
-export function Input({
-  label,
-  error,
-  onChange,
-  className = '',
-  disabled,
-  ...props
-}: InputProps) {
+export function Input({ label, error, onChange, className = '', disabled, ...props }: InputProps) {
   return (
     <div className="flex flex-col gap-1">
-      {label && (
-        <label className="text-sm text-text-secondary font-medium">{label}</label>
-      )}
+      {label && <label className="text-sm text-text-secondary font-medium">{label}</label>}
       <input
         className={`rounded bg-surface-tertiary border border-border-default px-3 py-1.5 text-sm
           text-text-primary placeholder:text-text-muted

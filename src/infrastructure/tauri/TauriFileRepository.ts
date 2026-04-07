@@ -11,19 +11,11 @@ export class TauriFileRepository implements IFileRepository {
     }))
   }
 
-  async uploadFile(
-    sessionId: string,
-    localPath: string,
-    remotePath: string,
-  ): Promise<Transfer> {
+  async uploadFile(sessionId: string, localPath: string, remotePath: string): Promise<Transfer> {
     return await invoke<Transfer>('upload_file', { sessionId, localPath, remotePath })
   }
 
-  async downloadFile(
-    sessionId: string,
-    remotePath: string,
-    localPath: string,
-  ): Promise<Transfer> {
+  async downloadFile(sessionId: string, remotePath: string, localPath: string): Promise<Transfer> {
     return await invoke<Transfer>('download_file', { sessionId, remotePath, localPath })
   }
 

@@ -18,7 +18,11 @@ export class SendAIMessage {
     this.aiClient = aiClient
   }
 
-  async execute(history: AIMessage[], userMessage: string, signal?: AbortSignal): Promise<AIMessage> {
+  async execute(
+    history: AIMessage[],
+    userMessage: string,
+    signal?: AbortSignal,
+  ): Promise<AIMessage> {
     if (!userMessage.trim()) {
       throw new AIMessageError('Message cannot be empty')
     }
@@ -35,9 +39,7 @@ export class SendAIMessage {
 
       return assistantMessage
     } catch (error) {
-      throw new AIMessageError(
-        error instanceof Error ? error.message : 'Failed to get AI response',
-      )
+      throw new AIMessageError(error instanceof Error ? error.message : 'Failed to get AI response')
     }
   }
 }

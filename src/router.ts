@@ -1,8 +1,4 @@
-import {
-  createRouter,
-  createRootRoute,
-  createRoute,
-} from '@tanstack/react-router'
+import { createRouter, createRootRoute, createRoute } from '@tanstack/react-router'
 import { Settings } from '@/presentation/pages'
 
 const rootRoute = createRootRoute()

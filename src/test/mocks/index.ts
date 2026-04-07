@@ -100,11 +100,7 @@ export class MockFileRepository implements IFileRepository {
     return [...this.entries]
   }
 
-  async uploadFile(
-    sessionId: string,
-    localPath: string,
-    remotePath: string,
-  ): Promise<Transfer> {
+  async uploadFile(sessionId: string, localPath: string, remotePath: string): Promise<Transfer> {
     if (this.shouldFail) throw new Error('Upload failed')
     return createTransfer({
       sessionId,
@@ -115,11 +111,7 @@ export class MockFileRepository implements IFileRepository {
     })
   }
 
-  async downloadFile(
-    sessionId: string,
-    remotePath: string,
-    localPath: string,
-  ): Promise<Transfer> {
+  async downloadFile(sessionId: string, remotePath: string, localPath: string): Promise<Transfer> {
     if (this.shouldFail) throw new Error('Download failed')
     return createTransfer({
       sessionId,
@@ -154,10 +146,7 @@ export class MockAIClient implements IAIClient {
     this.response = options.response ?? 'This is a mock AI response.'
   }
 
-  async sendMessage(
-    messages: unknown[],
-    _userMessage: string,
-  ): Promise<string> {
+  async sendMessage(messages: unknown[], _userMessage: string): Promise<string> {
     this.lastMessages = messages
     if (this.shouldFail) throw new Error('AI service unavailable')
     return this.response

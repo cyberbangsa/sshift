@@ -28,8 +28,7 @@ export const useVaultStore = create<VaultStore>((set) => ({
     set((state) => ({
       entries: state.entries.map((e) => (e.id === entry.id ? entry : e)),
     })),
-  removeEntry: (id) =>
-    set((state) => ({ entries: state.entries.filter((e) => e.id !== id) })),
+  removeEntry: (id) => set((state) => ({ entries: state.entries.filter((e) => e.id !== id) })),
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),
 }))

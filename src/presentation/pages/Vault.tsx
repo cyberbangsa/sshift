@@ -6,8 +6,15 @@ import { VaultEntryCard, VaultEntryForm } from '@/presentation/components/vault'
 import type { VaultEntryType } from '@/domain/entities'
 
 export function Vault() {
-  const { entries, isLoading, error, loadVault, addVaultEntry, renameVaultEntry, deleteVaultEntry } =
-    useVault(vaultRepository)
+  const {
+    entries,
+    isLoading,
+    error,
+    loadVault,
+    addVaultEntry,
+    renameVaultEntry,
+    deleteVaultEntry,
+  } = useVault(vaultRepository)
 
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [filter, setFilter] = useState<VaultEntryType | 'all'>('all')
@@ -42,10 +49,7 @@ export function Vault() {
 
         <div className="flex items-center gap-3">
           {/* Filter tabs */}
-          <div
-            className="flex rounded overflow-hidden"
-            style={{ border: '1px solid #1d2126' }}
-          >
+          <div className="flex rounded overflow-hidden" style={{ border: '1px solid #1d2126' }}>
             {(['all', 'privateKey', 'publicKey'] as const).map((f) => (
               <button
                 key={f}
@@ -83,7 +87,9 @@ export function Vault() {
 
         {/* Loading */}
         {isLoading && (
-          <p className="text-[0.6875rem]" style={{ color: '#56687a' }}>Loading vault…</p>
+          <p className="text-[0.6875rem]" style={{ color: '#56687a' }}>
+            Loading vault…
+          </p>
         )}
 
         {/* Empty state */}
@@ -107,7 +113,9 @@ export function Vault() {
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
             <p className="text-sm" style={{ color: '#56687a' }}>
-              {filter === 'all' ? 'No keys in vault yet' : `No ${filter === 'privateKey' ? 'private' : 'public'} keys`}
+              {filter === 'all'
+                ? 'No keys in vault yet'
+                : `No ${filter === 'privateKey' ? 'private' : 'public'} keys`}
             </p>
             <button
               onClick={() => setIsFormOpen(true)}
@@ -138,7 +146,9 @@ export function Vault() {
       <VaultEntryForm
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
-        onSave={async (name, type, content) => { await addVaultEntry(name, type, content) }}
+        onSave={async (name, type, content) => {
+          await addVaultEntry(name, type, content)
+        }}
       />
     </div>
   )

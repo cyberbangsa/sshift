@@ -7,8 +7,20 @@ import { createHost } from '@/test/factories'
 describe('HostList', () => {
   const defaultProps = {
     hosts: [
-      createHost({ id: '1', label: 'Production', hostname: 'prod.example.com', port: 22, username: 'admin' }),
-      createHost({ id: '2', label: 'Staging', hostname: 'staging.example.com', port: 2222, username: 'deploy' }),
+      createHost({
+        id: '1',
+        label: 'Production',
+        hostname: 'prod.example.com',
+        port: 22,
+        username: 'admin',
+      }),
+      createHost({
+        id: '2',
+        label: 'Staging',
+        hostname: 'staging.example.com',
+        port: 2222,
+        username: 'deploy',
+      }),
     ],
     selectedHostId: null,
     connectedHostIds: [] as string[],

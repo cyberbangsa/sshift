@@ -24,9 +24,10 @@ export function TerminalTab({
         <div
           key={session.id}
           className={`flex items-center gap-2 px-3 py-2 text-sm cursor-pointer border-r border-border-default transition-colors
-            ${session.id === activeSessionId
-              ? 'bg-surface-primary text-text-primary'
-              : 'text-text-secondary hover:text-text-primary hover:bg-surface-tertiary/30'
+            ${
+              session.id === activeSessionId
+                ? 'bg-surface-primary text-text-primary'
+                : 'text-text-secondary hover:text-text-primary hover:bg-surface-tertiary/30'
             }`}
           onClick={() => onSelectSession(session.id)}
           role="tab"
@@ -43,7 +44,12 @@ export function TerminalTab({
             aria-label="Close session"
           >
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-              <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <path
+                d="M2 2L8 8M8 2L2 8"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
             </svg>
           </button>
         </div>

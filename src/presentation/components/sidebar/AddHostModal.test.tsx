@@ -61,6 +61,8 @@ describe('AddHostModal', () => {
 
     await user.selectOptions(screen.getByDisplayValue('Password'), 'privateKey')
 
-    expect(screen.getByPlaceholderText('~/.ssh/id_rsa')).toBeInTheDocument()
+    // Private key field is now a file picker, not a plain text input
+    expect(screen.getByText(/no key selected/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /browse…/i })).toBeInTheDocument()
   })
 })

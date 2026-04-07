@@ -78,26 +78,22 @@ export const useTransferStore = create<TransferState & TransferActions>((set) =>
     }),
 
   watchTransfer: async (id: string) => {
-    const unlisten = await listen<TransferProgressPayload>(
-      `transfer-progress:${id}`,
-      (event) => {
-        const { bytesTransferred, totalBytes, percent, status } = event.payload
-        set((s) => {
-          const entry = s.transfers.get(id)
-          if (!entry) return s
-          const next = new Map(s.transfers)
-          next.set(id, {
-            ...entry,
-            bytesTransferred,
-            totalBytes,
-            progress: percent,
-            status,
-          })
-          return { transfers: next }
+    const unlisten = await listen<TransferProgressPayload>(`transfer-progress:${id}`, (event) => {
+      const { bytesTransferred, totalBytes, percent, status } = event.payload
+      set((s) => {
+        const entry = s.transfers.get(id)
+        if (!entry) return s
+        const next = new Map(s.transfers)
+        next.set(id, {
+          ...entry,
+          bytesTransferred,
+          totalBytes,
+          progress: percent,
+          status,
         })
-      },
-    )
+        return { transfers: next }
+      })
+    })
     return unlisten
   },
 }))
-

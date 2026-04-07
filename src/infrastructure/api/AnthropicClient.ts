@@ -19,7 +19,11 @@ export class AnthropicClient implements IAIClient {
     this.maxTokens = config.maxTokens ?? 4096
   }
 
-  async sendMessage(history: AIMessage[], userMessage: string, signal?: AbortSignal): Promise<string> {
+  async sendMessage(
+    history: AIMessage[],
+    userMessage: string,
+    signal?: AbortSignal,
+  ): Promise<string> {
     const messages = [
       ...history.map((msg) => ({
         role: msg.role as 'user' | 'assistant',

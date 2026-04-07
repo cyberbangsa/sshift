@@ -12,6 +12,12 @@ pub struct SshClient {
     sessions: Mutex<HashMap<String, Ssh2Session>>,
 }
 
+impl Default for SshClient {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SshClient {
     pub fn new() -> Self {
         Self {

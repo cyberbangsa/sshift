@@ -3,8 +3,8 @@ interface ActionChipsProps {
 }
 
 const quickActions = [
-  { label: 'Run with sudo',       command: 'Run the previous command with sudo' },
-  { label: 'Check ownership',     command: 'Check the file ownership and permissions' },
+  { label: 'Run with sudo', command: 'Run the previous command with sudo' },
+  { label: 'Check ownership', command: 'Check the file ownership and permissions' },
   { label: 'Explain error in detail', command: 'Explain this error in detail and suggest fixes' },
 ]
 

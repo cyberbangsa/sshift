@@ -41,12 +41,9 @@ export const useUIStore = create<UIStore>((set) => ({
   setSidebarWidth: (sidebarWidth) => set({ sidebarWidth }),
   setExplorerWidth: (explorerWidth) => set({ explorerWidth }),
   setAIPanelWidth: (aiPanelWidth) => set({ aiPanelWidth }),
-  toggleSidebar: () =>
-    set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
-  toggleExplorer: () =>
-    set((state) => ({ isExplorerVisible: !state.isExplorerVisible })),
-  toggleAIPanel: () =>
-    set((state) => ({ isAIPanelVisible: !state.isAIPanelVisible })),
+  toggleSidebar: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
+  toggleExplorer: () => set((state) => ({ isExplorerVisible: !state.isExplorerVisible })),
+  toggleAIPanel: () => set((state) => ({ isAIPanelVisible: !state.isAIPanelVisible })),
   openSettings: () => set({ isSettingsOpen: true }),
   closeSettings: () => set({ isSettingsOpen: false }),
   setActiveTab: (activeTab) => set({ activeTab }),

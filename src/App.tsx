@@ -15,20 +15,36 @@ interface SessionError {
 }
 
 // ── Error Boundary ────────────────────────────────────────────────────────────
-interface EBState { error: Error | null }
+interface EBState {
+  error: Error | null
+}
 class ErrorBoundary extends Component<{ children: ReactNode }, EBState> {
   constructor(props: { children: ReactNode }) {
     super(props)
     this.state = { error: null }
   }
-  static getDerivedStateFromError(error: Error) { return { error } }
+  static getDerivedStateFromError(error: Error) {
+    return { error }
+  }
   render() {
     if (this.state.error) {
       return (
-        <div style={{ padding: 32, fontFamily: 'monospace', color: '#ef4444', background: '#0c0e11', height: '100vh' }}>
-          <p style={{ color: '#fbbf24', marginBottom: 8, fontWeight: 'bold' }}>Render Error (open DevTools for full stack)</p>
+        <div
+          style={{
+            padding: 32,
+            fontFamily: 'monospace',
+            color: '#ef4444',
+            background: '#0c0e11',
+            height: '100vh',
+          }}
+        >
+          <p style={{ color: '#fbbf24', marginBottom: 8, fontWeight: 'bold' }}>
+            Render Error (open DevTools for full stack)
+          </p>
           <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>{this.state.error.message}</pre>
-          <pre style={{ whiteSpace: 'pre-wrap', fontSize: 11, color: '#56687a', marginTop: 12 }}>{this.state.error.stack}</pre>
+          <pre style={{ whiteSpace: 'pre-wrap', fontSize: 11, color: '#56687a', marginTop: 12 }}>
+            {this.state.error.stack}
+          </pre>
         </div>
       )
     }
@@ -42,20 +58,23 @@ function AppContent() {
   const [sessionError, setSessionError] = useState<SessionError | null>(null)
   const sessionList = Array.from(sessions.values())
 
-  const handleSessionClosed = useCallback((sessionId: string, hostLabel: string, exitCode: number) => {
-    if (exitCode === 0) {
-      // Normal exit (user typed `exit`) — silently close the tab
-      sessionRepository.disconnect(sessionId).catch(() => {})
-      removeSession(sessionId)
-      useAIStore.getState().removeSession(sessionId)
-    } else {
-      // Unexpected close — show error popup, then close tab
-      setSessionError({ sessionId, hostLabel, exitCode })
-      sessionRepository.disconnect(sessionId).catch(() => {})
-      removeSession(sessionId)
-      useAIStore.getState().removeSession(sessionId)
-    }
-  }, [removeSession])
+  const handleSessionClosed = useCallback(
+    (sessionId: string, hostLabel: string, exitCode: number) => {
+      if (exitCode === 0) {
+        // Normal exit (user typed `exit`) — silently close the tab
+        sessionRepository.disconnect(sessionId).catch(() => {})
+        removeSession(sessionId)
+        useAIStore.getState().removeSession(sessionId)
+      } else {
+        // Unexpected close — show error popup, then close tab
+        setSessionError({ sessionId, hostLabel, exitCode })
+        sessionRepository.disconnect(sessionId).catch(() => {})
+        removeSession(sessionId)
+        useAIStore.getState().removeSession(sessionId)
+      }
+    },
+    [removeSession],
+  )
 
   const dismissError = useCallback(() => setSessionError(null), [])
 
@@ -77,7 +96,7 @@ function AppContent() {
       {/* Sessions — all kept mounted so terminals preserve history */}
       {sessionList.map((session) => {
         const isActive = activeSessionId === session.id
-        const host = session.hostId  // label stored in store if available
+        const host = session.hostId // label stored in store if available
         return (
           <div
             key={session.id}
@@ -114,24 +133,46 @@ function AppContent() {
           >
             {/* Icon + title */}
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-9 h-9 rounded-full shrink-0" style={{ background: 'rgba(239,68,68,0.12)' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round">
-                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                  <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              <div
+                className="flex items-center justify-center w-9 h-9 rounded-full shrink-0"
+                style={{ background: 'rgba(239,68,68,0.12)' }}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#f87171"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-semibold" style={{ color: '#fca5a5' }}>Session Disconnected</p>
+                <p className="text-sm font-semibold" style={{ color: '#fca5a5' }}>
+                  Session Disconnected
+                </p>
                 <p className="text-xs mt-0.5" style={{ color: '#56687a' }}>
-                  Exit code <code className="px-1 rounded" style={{ background: '#1d2126', color: '#f87171' }}>{sessionError.exitCode}</code>
+                  Exit code{' '}
+                  <code
+                    className="px-1 rounded"
+                    style={{ background: '#1d2126', color: '#f87171' }}
+                  >
+                    {sessionError.exitCode}
+                  </code>
                 </p>
               </div>
             </div>
 
             {/* Message */}
             <p className="text-xs leading-relaxed" style={{ color: '#8a9bb0' }}>
-              The SSH connection to <span style={{ color: '#e2e2e6' }}>{sessionError.hostLabel}</span> was closed unexpectedly.
-              This can happen due to a network interruption, server-side timeout, or the remote process exiting with an error.
+              The SSH connection to{' '}
+              <span style={{ color: '#e2e2e6' }}>{sessionError.hostLabel}</span> was closed
+              unexpectedly. This can happen due to a network interruption, server-side timeout, or
+              the remote process exiting with an error.
             </p>
 
             {/* Actions */}

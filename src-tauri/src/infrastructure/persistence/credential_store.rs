@@ -6,6 +6,12 @@ const SERVICE_NAME: &str = "sshift";
 
 pub struct CredentialStore;
 
+impl Default for CredentialStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CredentialStore {
     pub fn new() -> Self {
         Self
