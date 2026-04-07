@@ -35,7 +35,11 @@ export function VaultEntryForm({ isOpen, onClose, onSave }: VaultEntryFormProps)
     setError(null)
     setIsSaving(true)
     try {
-      await onSave(name.trim(), type, content.trim())
+      // Normalize line endings and ensure a trailing newline so libssh2 can
+      // reliably parse both RSA (PEM) and Ed25519 (OpenSSH) key files.
+      const normalizedContent =
+        content.trim().replace(/\r\n/g, '\n').replace(/\r/g, '\n') + '\n'
+      await onSave(name.trim(), type, normalizedContent)
       setName('')
       setContent('')
       setType('privateKey')

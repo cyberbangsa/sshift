@@ -14,7 +14,9 @@ import { hostRepository, sessionRepository, vaultRepository } from '@/infrastruc
 import { AddHostModal } from '@/presentation/components/sidebar'
 import { AIPanel } from '@/presentation/components/ai'
 import { CommandPalette } from '@/presentation/components/command'
-import { Button, Modal } from '@/presentation/shared'
+import { PassphraseModal } from '@/presentation/components/terminal'
+import { Button, Modal, isPassphraseError, formatSshError } from '@/presentation/shared'
+import { passphraseCache } from '@/infrastructure/passphraseCache'
 import { Vault } from '@/presentation/pages'
 import { APP_NAME } from '@/config'
 import type { Host, AIRule } from '@/domain/entities'
@@ -41,6 +43,10 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [pendingHost, setPendingHost] = useState<Host | null>(null)
   const [pendingPassword, setPendingPassword] = useState('')
   const [showPendingPw, setShowPendingPw] = useState(false)
+
+  // Private-key passphrase prompt
+  const [passphraseHost, setPassphraseHost] = useState<Host | null>(null)
+  const [passphraseConnecting, setPassphraseConnecting] = useState(false)
 
   const { openSettings } = useUIStore()
   const { isCommandPaletteOpen, openCommandPalette, closeCommandPalette } = useUIStore()
@@ -150,16 +156,48 @@ export function AppLayout({ children }: AppLayoutProps) {
       }
       setConnectError(null)
       try {
-        await connectHost(host)
+        const cachedPassphrase = host.vaultEntryId ? passphraseCache.get(host.vaultEntryId) : undefined
+        await connectHost(cachedPassphrase ? { ...host, keyPassphrase: cachedPassphrase } : host)
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err)
-        const debug = `[${host.username}@${host.hostname}:${host.port} auth=${host.authMethod}${host.vaultEntryId ? ' vault=' + host.vaultEntryId : ''}${host.password ? ' pw=***' : ''}]`
-        setConnectError(`${msg}\n${debug}`)
-        if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
-        errorTimerRef.current = setTimeout(() => setConnectError(null), 10000)
+        const rawErr = err instanceof Error ? err.message : String(err)
+        console.error('[SSHift] connect error (raw):', rawErr)
+        if (isPassphraseError(rawErr)) {
+          setPassphraseHost(host)
+        } else {
+          setConnectError(`${formatSshError(rawErr)}\n${rawErr.slice(0, 160)}`)
+          if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
+          errorTimerRef.current = setTimeout(() => setConnectError(null), 10000)
+        }
       }
     },
     [connectHost, sessions, setActiveSession],
+  )
+
+  const handlePassphraseSubmit = useCallback(
+    async (passphrase: string) => {
+      if (!passphraseHost) return
+      const host = passphraseHost
+      if (host.vaultEntryId) passphraseCache.set(host.vaultEntryId, passphrase)
+      setPassphraseHost(null)
+      try {
+        setPassphraseConnecting(true)
+        await connectHost({ ...host, keyPassphrase: passphrase })
+      } catch (err) {
+        const rawErr = err instanceof Error ? err.message : String(err)
+        console.error('[SSHift] passphrase connect error (raw):', rawErr)
+        if (host.vaultEntryId && isPassphraseError(rawErr)) {
+          passphraseCache.clear(host.vaultEntryId)
+          setConnectError('Incorrect passphrase. Please try connecting again.')
+        } else {
+          setConnectError(`${formatSshError(rawErr)}\n${rawErr.slice(0, 160)}`)
+        }
+        if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
+        errorTimerRef.current = setTimeout(() => setConnectError(null), 10000)
+      } finally {
+        setPassphraseConnecting(false)
+      }
+    },
+    [passphraseHost, connectHost],
   )
 
   // Called from the password-prompt modal
@@ -477,6 +515,15 @@ export function AppLayout({ children }: AppLayoutProps) {
           onClose={() => setIsAddHostOpen(false)}
           onSave={saveHost}
         />
+        {passphraseHost && (
+          <PassphraseModal
+            hostname={passphraseHost.hostname}
+            username={passphraseHost.username}
+            isConnecting={passphraseConnecting}
+            onConfirm={handlePassphraseSubmit}
+            onCancel={() => setPassphraseHost(null)}
+          />
+        )}
         <CommandPalette
           isOpen={isCommandPaletteOpen}
           onClose={closeCommandPalette}
@@ -690,6 +737,15 @@ export function AppLayout({ children }: AppLayoutProps) {
         onClose={() => setIsAddHostOpen(false)}
         onSave={saveHost}
       />
+      {passphraseHost && (
+        <PassphraseModal
+          hostname={passphraseHost.hostname}
+          username={passphraseHost.username}
+          isConnecting={passphraseConnecting}
+          onConfirm={handlePassphraseSubmit}
+          onCancel={() => setPassphraseHost(null)}
+        />
+      )}
       <CommandPalette
         isOpen={isCommandPaletteOpen}
         onClose={closeCommandPalette}
