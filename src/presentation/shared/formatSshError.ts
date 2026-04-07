@@ -1,10 +1,20 @@
 /**
  * Returns true when the raw error string indicates the private key is
  * passphrase-protected and the passphrase was not supplied (or was wrong).
- * libssh2 reports this as "Callback returned error" with session code -19.
+ *
+ * libssh2 reports different errors depending on the key type and backend:
+ *  - RSA/PEM keys      : "Callback returned error" (Session -19, LIBSSH2_ERROR_DECRYPT)
+ *  - Ed25519/OpenSSH   : "bcrypted without passphrase" when no passphrase given
+ *                        "Private key unpack failed (correct password?)" when wrong passphrase
+ *                        Both map to Session -48 (LIBSSH2_ERROR_KEYFILE_AUTH_FAILED)
  */
 export function isPassphraseError(raw: string): boolean {
-  return /callback returned error/i.test(raw)
+  return (
+    /callback returned error/i.test(raw) ||
+    /bcrypted without passphrase/i.test(raw) ||
+    /private key unpack failed/i.test(raw) ||
+    /\[Session\(-48\)\]/i.test(raw)
+  )
 }
 
 /**
@@ -29,14 +39,39 @@ export function formatSshError(raw: string): string {
 
   // ── Authentication failures ────────────────────────────────────────────────
   if (/authentication failed/i.test(msg) || /auth failed/i.test(msg)) {
-    // libssh2 "Callback returned error" means it couldn't read/parse the key file
+    // libssh2 "Callback returned error" — RSA/PEM key passphrase issue
     if (/callback returned error/i.test(msg)) {
       return 'Could not read the private key file. The key may be passphrase-protected, corrupted, or in an unsupported format.'
     }
-    // "disconnect" or "Permission denied" from the server
-    if (/permission denied/i.test(msg) || /publickey/i.test(msg)) {
+    // Ed25519/OpenSSH bcrypt key: no passphrase supplied
+    if (/bcrypted without passphrase/i.test(msg)) {
+      return 'This key requires a passphrase. Please re-connect and enter the passphrase when prompted.'
+    }
+    // Ed25519/OpenSSH bcrypt key: passphrase was wrong (Session -48)
+    if (/private key unpack failed/i.test(msg) || /\[Session\(-48\)\]/i.test(msg)) {
+      return 'Incorrect passphrase for the private key. Please try connecting again.'
+    }
+    // Server-side rejection:
+    //  - LIBSSH2_ERROR_AUTHENTICATION_FAILED (-14): probe rejected / final FAILURE
+    //    → messages: "Username/PublicKey combination invalid"
+    //                or fallback "authentication failed" (from ssh2-rs from_errno)
+    //  - LIBSSH2_ERROR_PUBLICKEY_UNVERIFIED (-19): signing callback failed or
+    //    server rejected signed packet
+    //    → messages: "Invalid signature for supplied public key, or bad username/public key combination"
+    //                "public key unverified" (from ssh2-rs from_errno)
+    //                "Callback returned error" (signing callback failure)
+    //  Also catch "Permission denied, publickey" from OpenSSH servers.
+    if (
+      /\[Session\(-(?:14|19)\)\]/i.test(msg) ||
+      /permission denied/i.test(msg) ||
+      /publickey/i.test(msg) ||
+      /public[\s_]?key/i.test(msg) ||
+      /invalid signature/i.test(msg) ||
+      /username\/public/i.test(msg)
+    ) {
       return "The server rejected the key. Make sure the correct public key is added to the server's authorized_keys."
     }
+    // Password authentication failed
     if (/password/i.test(msg)) {
       return 'Incorrect password. Please check your credentials and try again.'
     }

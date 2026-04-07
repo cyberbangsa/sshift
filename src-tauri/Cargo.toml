@@ -24,6 +24,9 @@ tauri-plugin-log = "2"
 tauri-plugin-dialog = "2"
 tokio = { version = "1", features = ["full"] }
 ssh2 = "0.9"
+# Pure-Rust SSH key parsing — handles OpenSSH format (Ed25519 etc.) that
+# libssh2/OpenSSL cannot reliably parse on all platforms.
+ssh-key = { version = "0.6", features = ["ed25519", "rsa", "ecdsa", "encryption", "std"] }
 uuid = { version = "1", features = ["v4"] }
 keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
 thiserror = "2"

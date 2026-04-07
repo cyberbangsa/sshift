@@ -40,7 +40,7 @@ export function Dashboard() {
         if (isPassphraseError(rawErr)) {
           setPassphraseHost(host)
         } else {
-          setConnectError(formatSshError(rawErr))
+          setConnectError(`${formatSshError(rawErr)}\n${rawErr.slice(0, 160)}`)
         }
       } finally {
         setConnectingId(null)
@@ -71,7 +71,7 @@ export function Dashboard() {
           passphraseCache.clear(host.vaultEntryId)
           setConnectError('Incorrect passphrase. Please try connecting again.')
         } else {
-          setConnectError(formatSshError(rawErr))
+          setConnectError(`${formatSshError(rawErr)}\n${rawErr.slice(0, 160)}`)
         }
       } finally {
         setPassphraseConnecting(false)

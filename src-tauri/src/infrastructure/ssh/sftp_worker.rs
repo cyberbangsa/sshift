@@ -1,6 +1,19 @@
 /// SftpWorker — a dedicated thread per SSH session that owns the ssh2 SFTP
 /// subsystem and processes file-operation commands sent through a channel.
 /// Using a dedicated thread avoids the `!Send` constraint of ssh2::Session.
+
+/// Ensures a key file ends with a Unix newline.
+/// libssh2's OpenSSH parser can silently mis-derive the public key from
+/// files that lack a trailing `\n`, causing server-side rejection errors.
+fn normalize_key_file(path: &str) {
+    if let Ok(bytes) = std::fs::read(path) {
+        if !bytes.is_empty() && bytes.last() != Some(&b'\n') {
+            let mut fixed = bytes;
+            fixed.push(b'\n');
+            let _ = std::fs::write(path, fixed);
+        }
+    }
+}
 use ssh2::Session as Ssh2Session;
 use std::io::{Read, Write};
 use std::net::TcpStream;
@@ -127,9 +140,31 @@ fn sftp_thread(
                 return;
             }
             Some(path) => {
-                let pub_key = host.public_key_path.as_deref().map(Path::new);
+                normalize_key_file(path);
                 let passphrase = host.key_passphrase.as_deref();
-                ssh.userauth_pubkey_file(&host.username, pub_key, Path::new(path), passphrase)
+                eprintln!(
+                    "[SSHift SFTP] auth: user={} path={} has_passphrase={}",
+                    host.username, path, passphrase.is_some()
+                );
+                match crate::infrastructure::ssh::decode_key_for_libssh2(path, passphrase) {
+                    Err(decode_err) => {
+                        eprintln!("[SSHift SFTP] Key decode error: {decode_err}");
+                        let _ = result_tx.send(Err(format!("SFTP key decode: {decode_err}")));
+                        return;
+                    }
+                    Ok((key_pem, effective_passphrase)) => {
+                        let result = ssh.userauth_pubkey_memory(
+                            &host.username,
+                            None,
+                            &key_pem,
+                            effective_passphrase.as_deref(),
+                        );
+                        if let Err(ref e) = result {
+                            eprintln!("[SSHift SFTP] userauth_pubkey_memory FAILED: {e}");
+                        }
+                        result
+                    }
+                }
             }
         },
     };
