@@ -23,7 +23,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' https://api.anthropic.com; style-src 'self' 'unsafe-inline'"
+      "csp": "default-src 'self'; connect-src 'self' https://api.anthropic.com https://openrouter.ai; style-src 'self' 'unsafe-inline'"
     }
   },
   "bundle": {
