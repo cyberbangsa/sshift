@@ -54,10 +54,12 @@ fn read_local_dir(path: &str) -> Result<Vec<FileEntry>, String> {
         })
         .collect();
 
-    entries.sort_by(|a, b| match (&a.entry_type, &b.entry_type) {
-        (FileEntryType::Directory, FileEntryType::File) => std::cmp::Ordering::Less,
-        (FileEntryType::File, FileEntryType::Directory) => std::cmp::Ordering::Greater,
-        _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+    entries.sort_by_key(|e| {
+        let rank = match e.entry_type {
+            FileEntryType::Directory => 0,
+            _ => 1,
+        };
+        (rank, e.name.to_lowercase())
     });
 
     Ok(entries)
@@ -120,7 +122,17 @@ pub async fn list_remote_directory(
     tokio::task::spawn_blocking(move || {
         reply_rx
             .recv_timeout(std::time::Duration::from_secs(30))
-            .map_err(|_| "SFTP list_dir timed out".to_string())
+            .map_err(|e| match e {
+                std::sync::mpsc::RecvTimeoutError::Timeout => {
+                    "SFTP list_dir timed out: the remote server did not respond in 30 s. \
+                     Check your network connection or try reconnecting."
+                        .to_string()
+                }
+                std::sync::mpsc::RecvTimeoutError::Disconnected => {
+                    "SFTP worker disconnected unexpectedly. Please reconnect to the host."
+                        .to_string()
+                }
+            })
             .and_then(|r| r)
     })
     .await
