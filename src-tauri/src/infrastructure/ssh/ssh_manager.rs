@@ -159,7 +159,17 @@ impl SshManager {
             .ok_or_else(|| RepositoryError::NotFound(session_id.to_string()))?;
 
         if let Some(ref tx) = entry.sftp_tx {
-            return Ok(tx.clone());
+            // Probe liveness: if the worker thread has exited the SyncSender
+            // will return TrySendError::Disconnected.  Clear and re-spawn.
+            match tx.try_send(crate::infrastructure::ssh::SftpCommand::Ping) {
+                Ok(_) | Err(std::sync::mpsc::TrySendError::Full(_)) => {
+                    return Ok(tx.clone());
+                }
+                Err(std::sync::mpsc::TrySendError::Disconnected(_)) => {
+                    eprintln!("[SSHift] SFTP worker for session '{session_id}' has exited — restarting.");
+                    entry.sftp_tx = None;
+                }
+            }
         }
 
         // Spin up a new SFTP worker.

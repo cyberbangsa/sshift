@@ -4,7 +4,7 @@ import type { IFileRepository } from '@/domain/repositories'
 
 export class TauriFileRepository implements IFileRepository {
   async listDirectory(sessionId: string, path: string): Promise<FileEntry[]> {
-    const entries = await invoke<FileEntry[]>('list_directory', { sessionId, path })
+    const entries = await invoke<FileEntry[]>('list_remote_directory', { sessionId, path })
     return entries.map((entry) => ({
       ...entry,
       modifiedAt: new Date(entry.modifiedAt),
