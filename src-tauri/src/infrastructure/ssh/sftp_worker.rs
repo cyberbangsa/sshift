@@ -117,11 +117,6 @@ fn sftp_thread(
             return;
         }
     };
-    // Bound blocking read calls so a stalled readdir doesn't hang indefinitely
-    // (e.g. when a silent NAT/firewall drop occurs on an idle connection).
-    if let Err(e) = tcp.set_read_timeout(Some(std::time::Duration::from_secs(60))) {
-        eprintln!("[SSHift SFTP] Warning: could not set TCP read timeout: {e}");
-    }
     let mut ssh = match Ssh2Session::new() {
         Ok(s) => s,
         Err(e) => {
