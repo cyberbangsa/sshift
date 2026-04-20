@@ -110,6 +110,7 @@ fn sftp_thread(
 ) {
     // ── TCP + SSH handshake ───────────────────────────────────────────────────
     let addr = format!("{}:{}", host.hostname, host.port);
+    eprintln!("[SSHift SFTP] connecting to {addr} for {}...", host.username);
     let tcp = match TcpStream::connect(&addr) {
         Ok(t) => t,
         Err(e) => {
@@ -186,18 +187,48 @@ fn sftp_thread(
 
     // ── Create command channel and signal success ─────────────────────────────
     let (cmd_tx, cmd_rx) = sync_channel::<SftpCommand>(128);
+    eprintln!("[SSHift SFTP] worker ready for {}@{}", host.username, host.hostname);
     let _ = result_tx.send(Ok(cmd_tx));
     // result_tx is dropped — don't touch it after this point
 
     // ── Event loop ────────────────────────────────────────────────────────────
     loop {
         match cmd_rx.recv() {
-            Ok(SftpCommand::Disconnect) | Err(_) => return,
+            Ok(SftpCommand::Disconnect) | Err(_) => {
+                eprintln!("[SSHift SFTP] worker exiting for {}@{}", host.username, host.hostname);
+                return;
+            }
 
             Ok(SftpCommand::Ping) => { /* no-op liveness check */ }
 
             Ok(SftpCommand::ListDir { path, reply }) => {
-                let _ = reply.send(sftp_list_dir(&sftp, &path));
+                eprintln!("[SSHift SFTP] ListDir: {path}");
+                // Wrap in catch_unwind so a libssh2 panic surfaces as an error
+                // rather than silently dropping the reply channel (Disconnected).
+                let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    sftp_list_dir(&sftp, &path)
+                }));
+                match result {
+                    Ok(r) => {
+                        if let Err(ref e) = r {
+                            eprintln!("[SSHift SFTP] ListDir error: {e}");
+                        }
+                        let _ = reply.send(r);
+                    }
+                    Err(panic_val) => {
+                        let msg = if let Some(s) = panic_val.downcast_ref::<String>() {
+                            s.clone()
+                        } else if let Some(s) = panic_val.downcast_ref::<&str>() {
+                            s.to_string()
+                        } else {
+                            "unknown panic in sftp readdir".to_string()
+                        };
+                        eprintln!("[SSHift SFTP] ListDir PANICKED: {msg}");
+                        let _ = reply.send(Err(format!("SFTP readdir panicked: {msg}")));
+                        // SFTP state is undefined after a panic — exit the worker.
+                        return;
+                    }
+                }
             }
 
             Ok(SftpCommand::StatFile { path, reply }) => {
@@ -279,10 +310,15 @@ fn sftp_list_dir(sftp: &ssh2::Sftp, path: &str) -> Result<Vec<FileEntry>, String
         })
         .collect();
 
-    entries.sort_by(|a, b| match (&a.entry_type, &b.entry_type) {
-        (FileEntryType::Directory, FileEntryType::File) => std::cmp::Ordering::Less,
-        (FileEntryType::File, FileEntryType::Directory) => std::cmp::Ordering::Greater,
-        _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+    // Use sort_by_key for a guaranteed total order:
+    // directories first, then symlinks, then files; alphabetical within each group.
+    entries.sort_by_key(|e| {
+        let rank = match e.entry_type {
+            FileEntryType::Directory => 0,
+            FileEntryType::Symlink => 1,
+            FileEntryType::File => 2,
+        };
+        (rank, e.name.to_lowercase())
     });
 
     Ok(entries)

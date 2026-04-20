@@ -54,10 +54,12 @@ fn read_local_dir(path: &str) -> Result<Vec<FileEntry>, String> {
         })
         .collect();
 
-    entries.sort_by(|a, b| match (&a.entry_type, &b.entry_type) {
-        (FileEntryType::Directory, FileEntryType::File) => std::cmp::Ordering::Less,
-        (FileEntryType::File, FileEntryType::Directory) => std::cmp::Ordering::Greater,
-        _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+    entries.sort_by_key(|e| {
+        let rank = match e.entry_type {
+            FileEntryType::Directory => 0,
+            _ => 1,
+        };
+        (rank, e.name.to_lowercase())
     });
 
     Ok(entries)
